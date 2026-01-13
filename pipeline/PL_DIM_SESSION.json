@@ -1,0 +1,68 @@
+{
+	"name": "PL_DIM_SESSION",
+	"properties": {
+		"activities": [
+			{
+				"name": "exec_cdt_DIM_SESSION",
+				"description": "Run dataflow to populate DIM_SESSION",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Insert Row 1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "cdt_DIM_SESSION",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Insert Row 1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "IF NOT EXISTS(SELECT * FROM [DWH].[DIM_SESSION] WHERE [SESSION_KEY]=1)\nINSERT INTO [DWH].[DIM_SESSION] ([SESSION_KEY], [SESSION_CD], [SES_END_DT], [SES_START_DT], [SES_ENGLISH_NAME], [FEES_ACTIVE_IND], [CURRENT_SESSION_IND], [PARENT_SESSION_CD], [SUMMER_TERM1], [SUMMER_TERM2], [ACADEMIC_PERIOD], [FISCAL_YR], [ACADEMIC_YR], [CALENDAR_YR], [SESSION_YEAR_AS_INT], [SESSION_AS_INT], [SESSION_MONTH_AS_INT], [SES_ENGLISH_NAME2], [SESSION_TYPE])\nVALUES(1, 'N/A', '9999-12-31', '0001-01-01', 'N/A', 'N', 'N', '', '', '', '99999', '9999/1000', '9999/1000', '9999', 0, 0, 0, 'N/A', 'N/A');\n",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"folder": {
+			"name": "Common Dim Tables"
+		},
+		"annotations": []
+	}
+}
