@@ -1,0 +1,117 @@
+{
+	"name": "UT_TGT_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "IRDGMI_DWH",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"pSchema": {
+				"type": "string",
+				"defaultValue": "DWH"
+			},
+			"pTable": {
+				"type": "string",
+				"defaultValue": "DIM_SESSION"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "SESSION_KEY",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "SESSION_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "SES_END_DT",
+				"type": "date"
+			},
+			{
+				"name": "SES_START_DT",
+				"type": "date"
+			},
+			{
+				"name": "SES_ENGLISH_NAME",
+				"type": "varchar"
+			},
+			{
+				"name": "FEES_ACTIVE_IND",
+				"type": "char"
+			},
+			{
+				"name": "CURRENT_SESSION_IND",
+				"type": "char"
+			},
+			{
+				"name": "PARENT_SESSION_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "SUMMER_TERM1",
+				"type": "varchar"
+			},
+			{
+				"name": "SUMMER_TERM2",
+				"type": "varchar"
+			},
+			{
+				"name": "ACADEMIC_PERIOD",
+				"type": "varchar"
+			},
+			{
+				"name": "FISCAL_YR",
+				"type": "varchar"
+			},
+			{
+				"name": "ACADEMIC_YR",
+				"type": "varchar"
+			},
+			{
+				"name": "CALENDAR_YR",
+				"type": "char"
+			},
+			{
+				"name": "SESSION_YEAR_AS_INT",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "SESSION_AS_INT",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "SESSION_MONTH_AS_INT",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "SES_ENGLISH_NAME2",
+				"type": "varchar"
+			},
+			{
+				"name": "YEARS_BEFORE_CURRENT_AMT",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "SESSIONS_BEFORE_CURRENT_AMT",
+				"type": "smallint",
+				"precision": 5
+			},
+			{
+				"name": "SESSION_TYPE",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "DWH",
+			"table": "DIM_SESSION"
+		}
+	}
+}
