@@ -1,5 +1,5 @@
 {
-	"name": "UT_TGT_DS",
+	"name": "IRDGMI_DWH",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "IRDGMI_DWH",

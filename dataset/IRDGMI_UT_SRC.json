@@ -1,5 +1,5 @@
 {
-	"name": "UT_SRC_DS",
+	"name": "IRDGMI_UT_SRC",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "IRDGMI_UT_SRC",
