@@ -1,0 +1,94 @@
+{
+	"name": "UT_SRC_DS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "IRDGMI_UT_SRC",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"pSchema": {
+				"type": "string",
+				"defaultValue": "SIS"
+			},
+			"pTable": {
+				"type": "string",
+				"defaultValue": "SESSION"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "SESSION_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "LEVEL_OF_INSTR",
+				"type": "varchar"
+			},
+			{
+				"name": "LOG_COUNTER",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "PARENT_SES_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "SES_END_DT",
+				"type": "date"
+			},
+			{
+				"name": "SES_START_DT",
+				"type": "date"
+			},
+			{
+				"name": "SES_ENGLISH_NAME",
+				"type": "varchar"
+			},
+			{
+				"name": "SES_FRENCH_NAME",
+				"type": "varchar"
+			},
+			{
+				"name": "FEES_ACTIVE_IND",
+				"type": "char"
+			},
+			{
+				"name": "INSTANT_CALC_IND",
+				"type": "varchar"
+			},
+			{
+				"name": "LIBRARY_XFER_TMST",
+				"type": "datetime2",
+				"scale": 7
+			},
+			{
+				"name": "ALUMNI_XFER_TMST",
+				"type": "datetime2",
+				"scale": 7
+			},
+			{
+				"name": "FEE_SUB_SESSION_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "CAN_HP_TRANS_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "FRGN_HP_TRANS_CD",
+				"type": "varchar"
+			},
+			{
+				"name": "REFUND_CRIT_CD",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "SIS",
+			"table": "SESSION"
+		}
+	}
+}
