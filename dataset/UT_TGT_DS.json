@@ -111,7 +111,11 @@
 		],
 		"typeProperties": {
 			"schema": {
-				"value": "@{concat(dataset().pSchema, '.', dataset().pTable)}",
+				"value": "@{dataset().pSchema}",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@{dataset().pTable}",
 				"type": "Expression"
 			}
 		}
