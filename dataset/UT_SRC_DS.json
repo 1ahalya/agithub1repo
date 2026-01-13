@@ -87,8 +87,10 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "SIS",
-			"table": "SESSION"
+			"schema": {
+				"value": "@{concat(dataset().pSchema, '.', dataset().pTable)}",
+				"type": "Expression"
+			}
 		}
 	}
 }
