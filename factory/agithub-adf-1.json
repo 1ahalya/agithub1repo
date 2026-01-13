@@ -1,0 +1,9 @@
+{
+	"name": "agithub-adf-1",
+	"location": "canadacentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a410d7ec-0f4a-48b8-b858-4a805465dda0",
+		"tenantId": "1ad9cc0d-fd43-4909-b353-f20ac277fde7"
+	}
+}
