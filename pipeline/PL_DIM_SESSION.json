@@ -25,7 +25,37 @@
 				"typeProperties": {
 					"dataflow": {
 						"referenceName": "cdt_DIM_SESSION",
-						"type": "DataFlowReference"
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"srcSession": {
+								"pSchema": "SIS",
+								"pTable": "SESSION"
+							},
+							"srcDimSession": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							},
+							"srcMaxDimSessionKey": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							},
+							"srcYearsBeforeCurrentAmt": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							},
+							"srcSessionsBeforeCurrentAmt": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							},
+							"sinkDimSessionInsert": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							},
+							"sinkDimSessionUpdate": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							}
+						}
 					},
 					"compute": {
 						"coreCount": 8,
@@ -46,6 +76,10 @@
 					"secureInput": false
 				},
 				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "IRDGMI_DWH",
+					"type": "LinkedServiceReference"
+				},
 				"typeProperties": {
 					"scripts": [
 						{
