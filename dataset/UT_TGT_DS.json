@@ -110,8 +110,10 @@
 			}
 		],
 		"typeProperties": {
-			"schema": "DWH",
-			"table": "DIM_SESSION"
+			"schema": {
+				"value": "@{concat(dataset().pSchema, '.', dataset().pTable)}",
+				"type": "Expression"
+			}
 		}
 	}
 }
