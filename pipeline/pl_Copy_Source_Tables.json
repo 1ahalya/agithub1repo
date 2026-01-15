@@ -1,0 +1,835 @@
+{
+	"name": "pl_Copy_Source_Tables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Section",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "EXTRACT_SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "EXTRACT_LOAD_TS",
+								"value": {
+									"value": "@convertTimeZone(utcNow(),'UTC','Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						],
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[SECTION] WHERE CAST(SUBSTRING('@{pipeline().parameters.p_EXTRACT_SESSION_CD}', 1, 4) AS INT) - CAST(SUBSTRING(EXTRACT_SESSION_CD, 1, 4) AS INT) > 5;\nDELETE FROM [CENSUS].[SECTION] WHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}';\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "SECTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "SECTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "LABEL",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LABEL",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								},
+								"sink": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								}
+							},
+							{
+								"source": {
+									"name": "ORDERING",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ORDERING",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Copy Question",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Copy Section",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "EXTRACT_SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "EXTRACT_LOAD_TS",
+								"value": {
+									"value": "@convertTimeZone(utcNow(),'UTC','Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						],
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[QUESTION] WHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}';\nDELETE FROM [CENSUS].[QUESTION] WHERE CAST(SUBSTRING('@{pipeline().parameters.p_EXTRACT_SESSION_CD}', 1, 4) AS INT) - CAST(SUBSTRING(EXTRACT_SESSION_CD, 1, 4) AS INT) > 5\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "QUESTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "QUESTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "SECTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "SECTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "NAME",
+									"type": "String"
+								},
+								"sink": {
+									"name": "NAME",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "REQUIRED",
+									"type": "Boolean"
+								},
+								"sink": {
+									"name": "REQUIRED",
+									"type": "Boolean"
+								}
+							},
+							{
+								"source": {
+									"name": "SHORT_QSTN_TXT",
+									"type": "String"
+								},
+								"sink": {
+									"name": "SHORT_QSTN_TXT",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "FULL_QSTN_TXT",
+									"type": "String"
+								},
+								"sink": {
+									"name": "FULL_QSTN_TXT",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "OPTION_TYP",
+									"type": "String"
+								},
+								"sink": {
+									"name": "OPTION_TYP",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "AVOID_QSTN_IND",
+									"type": "Boolean"
+								},
+								"sink": {
+									"name": "AVOID_QSTN_IND",
+									"type": "Boolean"
+								}
+							},
+							{
+								"source": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								},
+								"sink": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								}
+							},
+							{
+								"source": {
+									"name": "ORDERING",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ORDERING",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Copy Option",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Copy Question",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "EXTRACT_SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "EXTRACT_LOAD_TS",
+								"value": {
+									"value": "@convertTimeZone(utcNow(),'UTC','Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						],
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[OPTION] WHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}';\nDELETE FROM [CENSUS].[OPTION] WHERE CAST(SUBSTRING('@{pipeline().parameters.p_EXTRACT_SESSION_CD}', 1, 4) AS INT) - CAST(SUBSTRING(EXTRACT_SESSION_CD, 1, 4) AS INT) > 5\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "OPTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "OPTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "QUESTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "QUESTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "CODE",
+									"type": "String"
+								},
+								"sink": {
+									"name": "CODE",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "LABEL",
+									"type": "String"
+								},
+								"sink": {
+									"name": "LABEL",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "DESCRIPTION"
+								},
+								"sink": {
+									"name": "DESCRIPTION"
+								}
+							},
+							{
+								"source": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								},
+								"sink": {
+									"name": "ACTIVE",
+									"type": "Boolean"
+								}
+							},
+							{
+								"source": {
+									"name": "SUB_OPTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "SUB_OPTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "ORDERING",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "ORDERING",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "EXPIRY_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "CREATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "UPDATE_TS",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Copy Census",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Copy Option",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "EXTRACT_SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "EXTRACT_LOAD_TS",
+								"value": {
+									"value": "@convertTimeZone(utcNow(),'UTC','Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						],
+						"sqlReaderQuery": "SELECT [PERSON_ID] ,[COMPLETE_DT] ,[CREATE_DT]\r\n  FROM [Census].[CENSUS]\r\n  WHERE COMPLETE_DT IS NOT NULL\r\n",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[CENSUS] WHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}';\nDELETE FROM [CENSUS].[CENSUS] WHERE CAST(SUBSTRING('@{pipeline().parameters.p_EXTRACT_SESSION_CD}', 1, 4) AS INT) - CAST(SUBSTRING(EXTRACT_SESSION_CD, 1, 4) AS INT) > 5\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "PERSON_ID",
+									"type": "Decimal"
+								},
+								"sink": {
+									"name": "PERSON_ID",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "COMPLETE_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "COMPLETE_DT",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "CREATE_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "CREATE_DT",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Copy Answer",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Copy Census",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "EXTRACT_SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "EXTRACT_LOAD_TS",
+								"value": {
+									"value": "@convertTimeZone(utcNow(),'UTC','Eastern Standard Time')",
+									"type": "Expression"
+								}
+							}
+						],
+						"sqlReaderQuery": "SELECT A.[PERSON_ID]\r\n      ,A.[OPTION_ID]\r\n      ,A.[USER_SPECD]\r\n      ,A.[CREATE_DT]\r\n      ,A.[UPDATE_DT]\r\n  FROM [Census].[ANSWER] A\r\n  INNER JOIN (SELECT [PERSON_ID], [COMPLETE_DT]\r\n                FROM [Census].[CENSUS]) B ON A.PERSON_ID = B.PERSON_ID\r\n  WHERE B.COMPLETE_DT IS NOT NULL\r\n",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[ANSWER] WHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}';\nDELETE FROM [CENSUS].[ANSWER] WHERE CAST(SUBSTRING('@{pipeline().parameters.p_EXTRACT_SESSION_CD}', 1, 4) AS INT) - CAST(SUBSTRING(EXTRACT_SESSION_CD, 1, 4) AS INT) > 5\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "PERSON_ID",
+									"type": "Decimal"
+								},
+								"sink": {
+									"name": "PERSON_ID",
+									"type": "Decimal"
+								}
+							},
+							{
+								"source": {
+									"name": "OPTION_ID",
+									"type": "Int32"
+								},
+								"sink": {
+									"name": "OPTION_ID",
+									"type": "Int32"
+								}
+							},
+							{
+								"source": {
+									"name": "USER_SPECD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "USER_SPECD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "CREATE_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "CREATE_DT",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "UPDATE_DT",
+									"type": "DateTime"
+								},
+								"sink": {
+									"name": "UPDATE_DT",
+									"type": "DateTime"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_SESSION_CD",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "String"
+								},
+								"sink": {
+									"name": "EXTRACT_LOAD_TS",
+									"type": "DateTime"
+								}
+							}
+						]
+					}
+				},
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "FailIfAnyActivitiesFailedOrSkipped",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Copy Answer",
+						"dependencyConditions": [
+							"Failed",
+							"Skipped"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": {
+						"value": "One or more Copy activities has been skipped or has failed.",
+						"type": "Expression"
+					},
+					"errorCode": "103"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
