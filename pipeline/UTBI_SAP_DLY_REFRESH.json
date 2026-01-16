@@ -1,0 +1,324 @@
+{
+	"name": "UTBI_SAP_DLY_REFRESH",
+	"properties": {
+		"activities": [
+			{
+				"name": "SAP_1st_Set_Tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": "select name from (\nselect name,p.rows,(ROW_NUMBER() OVER(order by rows desc))%4 as rown from sys.tables t \nright join sys.partitions p  ON t.OBJECT_ID = p.object_id\nwhere schema_name(t.schema_id) = 'SAP'\n ) as test\nwhere rown=0",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "sys",
+							"Table": "tables"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach0",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SAP_1st_Set_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('SAP_1st_Set_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Execute Pipeline0",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"waitOnCompletion": true,
+								"parameters": {
+									"tablen": {
+										"value": "@item().name",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SAP_2nd_Set_Tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": "select name from (\nselect name,p.rows,(ROW_NUMBER() OVER(order by rows desc))%4 as rown from sys.tables t \nright join sys.partitions p  ON t.OBJECT_ID = p.object_id\nwhere schema_name(t.schema_id) = 'SAP'\n ) as test\nwhere rown=1",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Table": "tables",
+							"Schema": "sys"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SAP_2nd_Set_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('SAP_2nd_Set_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Execute Pipeline1",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"waitOnCompletion": true
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SAP_3rd_Set_Tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": "select name from (\nselect name,p.rows,(ROW_NUMBER() OVER(order by rows desc))%4 as rown from sys.tables t \nright join sys.partitions p  ON t.OBJECT_ID = p.object_id\nwhere schema_name(t.schema_id) = 'SAP'\n ) as test\nwhere rown=2",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Table": "tables",
+							"Schema": "sys"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach2",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SAP_3rd_Set_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('SAP_3rd_Set_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Execute Pipeline2",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"waitOnCompletion": true,
+								"parameters": {
+									"tablen": {
+										"value": "@item().name",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SAP_4th_Set_Tables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": "select name from (\nselect name,p.rows,(ROW_NUMBER() OVER(order by rows desc))%4 as rown from sys.tables t \nright join sys.partitions p  ON t.OBJECT_ID = p.object_id\nwhere schema_name(t.schema_id) = 'SAP'\n ) as test\nwhere rown=3",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Table": "tables",
+							"Schema": "sys"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach3",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "SAP_4th_Set_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('SAP_4th_Set_Tables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "Execute Pipeline3",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"waitOnCompletion": true,
+								"parameters": {
+									"tablen": {
+										"value": "@item().name",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Archive_Pipeline",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ForEach0",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ForEach2",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "ForEach3",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"SrchPath": "raw_zone/UTBI/UTBI_Shared/SAP/Incoming",
+						"Archpath": "raw_zone/UTBI/UTBI_Shared/SAP/Archive"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "archived"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-03-25T22:06:50Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
