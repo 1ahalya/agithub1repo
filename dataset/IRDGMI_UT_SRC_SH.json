@@ -1,0 +1,24 @@
+{
+	"name": "IRDGMI_UT_SRC_SH",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "IRDGMI_UT_SRC",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"tablen": {
+				"type": "string",
+				"defaultValue": "TESTTABLE"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@concat('SAP', dataset().tablen)",
+				"type": "Expression"
+			}
+		}
+	}
+}
