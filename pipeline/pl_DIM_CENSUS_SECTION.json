@@ -70,8 +70,8 @@
 						"referenceName": "IRDGMI_UT_SRC_SH",
 						"type": "DatasetReference",
 						"parameters": {
-							"schema": "SAP",
-							"table": "STXH"
+							"schema": "CENSUS",
+							"table": "SECTION"
 						}
 					}
 				],
