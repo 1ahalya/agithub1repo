@@ -30,6 +30,20 @@
 								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
 								"type": "Expression"
 							}
+						},
+						"datasetParameters": {
+							"srcOption": {
+								"pSchema": "SIS",
+								"pTable": "SESSION"
+							},
+							"srcParentOption": {
+								"pSchema": "SIS",
+								"pTable": "SESSION"
+							},
+							"sinkDIMCENSUSANSWER": {
+								"pSchema": "DWH",
+								"pTable": "DIM_SESSION"
+							}
 						}
 					},
 					"compute": {
