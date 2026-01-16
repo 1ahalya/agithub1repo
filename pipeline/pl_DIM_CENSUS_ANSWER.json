@@ -1,0 +1,78 @@
+{
+	"name": "pl_DIM_CENSUS_ANSWER",
+	"properties": {
+		"activities": [
+			{
+				"name": "exec_df_DIM_CENSUS_ANSWER",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Insert Answer Row 1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_DIM_CENSUS_ANSWER",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Insert Answer Row 1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "SET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_ANSWER] ON;\nIF NOT EXISTS(SELECT * FROM [CENSUS].[DIM_CENSUS_ANSWER] WHERE ANSWER_KEY=1)\nINSERT INTO [CENSUS].[DIM_CENSUS_ANSWER] (ANSWER_KEY, SESSION_CD, ANSWER_OPTION_ID, ANSWER_QUESTION_ID, ANSWER_CODE, ANSWER_LABEL, ANSWER_DESCRIPTION, ANSWER_TYPE, ANSWER_PARENT_OPTION_ID, ANSWER_PARENT_LABEL, ANSWER_ACT_SUBOPT_CNT, ANSWER_STATUS, ANSWER_ORDERING_ID, CREATE_TS)\nVALUES(1, 'N/A', 0, 0, 'N/A', 'N/A', 'N/A', 'N/A', NULL, NULL, 0, 'N/A', 0, '1900-01-01 12:00:00:00');\nSET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_ANSWER] OFF;",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
