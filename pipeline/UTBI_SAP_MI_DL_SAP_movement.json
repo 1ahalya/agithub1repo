@@ -1,0 +1,267 @@
+{
+	"name": "UTBI_SAP_MI_DL_SAP_movement",
+	"properties": {
+		"activities": [
+			{
+				"name": "UTBI_SAP_MI_SAP",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SapHanaSource",
+						"additionalColumns": [
+							{
+								"name": "BATCH_TS",
+								"value": {
+									"value": "@ConvertFromUtc(pipeline().TriggerTime, 'Eastern Standard Time')",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "MASTER_SOURCE_ID",
+								"value": "102"
+							}
+						],
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "@{concat(' truncate table SAP.',pipeline().parameters.tablen)}",
+							"type": "Expression"
+						}
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "Gen_HANA_QS1",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "SAPABAP1",
+							"Table": {
+								"value": "@pipeline().parameters.tablen",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "SAP",
+							"Table": {
+								"value": "@pipeline().parameters.tablen",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "UTBI_MI_DL_SAP",
+				"description": "",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "UTBI_SAP_MI_SAP",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "MI_IDH_ECO",
+						"type": "DatasetReference",
+						"parameters": {
+							"Schema": "SAP",
+							"Table": {
+								"value": "@pipeline().parameters.tablen",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DL_SH_CSV",
+						"type": "DatasetReference",
+						"parameters": {
+							"Folder": "raw_zone/UTBI/UTBI_Shared/SAP/Incoming",
+							"File": {
+								"value": "@concat('SAP_',pipeline().parameters.tablen,'_',formatDateTime(ConvertFromUtc(pipeline().TriggerTime, 'Eastern Standard Time'), 'yyyy-MM-dd'),'.csv')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Failure MI to DL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "UTBI_MI_DL_SAP",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"STATUS_CD_par": "F",
+						"NOTE_par": {
+							"value": "@Concat('SAP.',pipeline().parameters.tablen,' MI_to_DL')",
+							"type": "Expression"
+						},
+						"JOB_ID": "1"
+					}
+				}
+			},
+			{
+				"name": "Success MI to DL",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "UTBI_MI_DL_SAP",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"STATUS_CD_par": "C",
+						"NOTE_par": {
+							"value": "@Concat('SAP.',pipeline().parameters.tablen,' MI_to_DL')",
+							"type": "Expression"
+						},
+						"JOB_ID": "1"
+					}
+				}
+			},
+			{
+				"name": "Failure ROSI to MI",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "UTBI_SAP_MI_SAP",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"STATUS_CD_par": "F",
+						"NOTE_par": {
+							"value": "@Concat('SAP.',pipeline().parameters.tablen,' SAP_to_MI')",
+							"type": "Expression"
+						},
+						"JOB_ID": "1"
+					}
+				}
+			},
+			{
+				"name": "Success ROSI to MI",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "UTBI_SAP_MI_SAP",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"waitOnCompletion": true,
+					"parameters": {
+						"STATUS_CD_par": "C",
+						"NOTE_par": {
+							"value": "@Concat('SAP.',pipeline().parameters.tablen,' SAP_to_MI')",
+							"type": "Expression"
+						},
+						"JOB_ID": "1"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"tablen": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"folder": {
+			"name": "archived"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-10-22T21:09:42Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
