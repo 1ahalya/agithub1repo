@@ -1,0 +1,76 @@
+{
+	"name": "SAP_COPY_OneTable",
+	"properties": {
+		"description": "new SAP copy pipeline, cloned from old pipeline, then remove the csv operation",
+		"activities": [
+			{
+				"name": "UTBI_SAP_MI_SAP",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SapHanaSource",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"enableSkipIncompatibleRow": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "Gen_HANA_AMS",
+						"type": "DatasetReference",
+						"parameters": {
+							"Table": {
+								"value": "@pipeline().parameters.tablen",
+								"type": "Expression"
+							},
+							"Schema": "SAPABAP1"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC_SH",
+						"type": "DatasetReference",
+						"parameters": {
+							"tablen": "TESTTABLE"
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"tablen": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"folder": {
+			"name": "SAP Tables"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-24T19:03:54Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
