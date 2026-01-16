@@ -78,7 +78,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_DWH",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "DWH",
+							"pTable": "DIM_SESSION"
+						}
 					}
 				]
 			},
@@ -94,6 +98,10 @@
 					"secureInput": false
 				},
 				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "IRDGMI_DWH",
+					"type": "LinkedServiceReference"
+				},
 				"typeProperties": {
 					"scripts": [
 						{
