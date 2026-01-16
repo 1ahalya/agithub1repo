@@ -6,9 +6,11 @@
 			"type": "LinkedServiceReference"
 		},
 		"parameters": {
-			"tablen": {
-				"type": "string",
-				"defaultValue": "TESTTABLE"
+			"schema": {
+				"type": "string"
+			},
+			"table": {
+				"type": "string"
 			}
 		},
 		"annotations": [],

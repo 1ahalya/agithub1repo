@@ -68,13 +68,20 @@
 				"inputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC_SH",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "TESTTABLE"
+						}
 					}
 				],
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_DWH",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "DWH",
+							"pTable": "DIM_SESSION"
+						}
 					}
 				]
 			},

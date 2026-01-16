@@ -54,7 +54,7 @@
 						"referenceName": "IRDGMI_UT_SRC_SH",
 						"type": "DatasetReference",
 						"parameters": {
-							"tablen": "TESTTABLE"
+							"schema": "TESTTABLE"
 						}
 					}
 				]
