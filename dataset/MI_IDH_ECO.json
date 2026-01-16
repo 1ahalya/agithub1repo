@@ -1,0 +1,22 @@
+{
+	"name": "MI_IDH_ECO",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "MI_IDH_ECO",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Schema": {
+				"type": "string",
+				"defaultValue": "sys"
+			},
+			"Table": {
+				"type": "string",
+				"defaultValue": "tables"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	}
+}
