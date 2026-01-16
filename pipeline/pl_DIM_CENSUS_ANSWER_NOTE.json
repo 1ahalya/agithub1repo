@@ -1,0 +1,78 @@
+{
+	"name": "pl_DIM_CENSUS_ANSWER_NOTE",
+	"properties": {
+		"activities": [
+			{
+				"name": "Insert Answer Note Row 1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "SET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_ANSWER_NOTE] ON;\nIF NOT EXISTS(SELECT * FROM [CENSUS].[DIM_CENSUS_ANSWER_NOTE] WHERE ANSWER_NOTE_KEY=1)\nINSERT INTO [CENSUS].[DIM_CENSUS_ANSWER_NOTE] (ANSWER_NOTE_KEY, SESSION_CD, PSEUDO_PERSON_ID, CENSUS_QUESTION_ID, CENSUS_OPTION_ID, NOTE)\nVALUES(1, 'N/A', 0, 0, 0, 'N/A');\nSET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_ANSWER_NOTE] OFF;",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "exec_df_DIM_CENSUS_ANSWER_NOTE",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Insert Answer Note Row 1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_DIM_CENSUS_ANSWER_NOTE",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
