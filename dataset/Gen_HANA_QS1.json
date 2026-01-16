@@ -1,0 +1,27 @@
+{
+	"name": "Gen_HANA_QS1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SAP_HANA_LS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Schema": {
+				"type": "string",
+				"defaultValue": "SAPABAP1"
+			},
+			"Table": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "SapHanaTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@pipeline().parameters.tablen",
+				"type": "Expression"
+			}
+		}
+	}
+}
