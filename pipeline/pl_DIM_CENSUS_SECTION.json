@@ -1,0 +1,134 @@
+{
+	"name": "pl_DIM_CENSUS_SECTION",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Section",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Insert Section Row 1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							},
+							{
+								"name": "CENSUS_EXTRACT_NM",
+								"value": {
+									"value": "@concat(pipeline().parameters.p_SNAPSHOT_CATEGORY, ' for ', pipeline().parameters.p_SESSION_NAME, ' (', formatDateTime(pipeline().parameters.p_SNAPSHOT_START_DT, 'MMM dd, yyyy'),  ')')",
+									"type": "Expression"
+								}
+							}
+						],
+						"sqlReaderQuery": {
+							"value": "SELECT SECTION_ID, LABEL AS SECTION_LABEL, \nCASE WHEN ACTIVE=1 THEN 'Active' WHEN ACTIVE=0 THEN 'Inactive' ELSE 'N/A' END AS SECTION_STATUS, ORDERING AS SECTION_ORDERING_ID, CREATE_TS, UPDATE_TS, EXPIRY_TS\nFROM [CENSUS].[SECTION]\nWHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}'\n",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[DIM_CENSUS_SECTION] WHERE SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC_SH",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "SAP",
+							"table": "STXH"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Insert Section Row 1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "SET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_SECTION] ON;\nIF NOT EXISTS(SELECT * FROM [CENSUS].[DIM_CENSUS_SECTION] WHERE SECTION_KEY=1)\nINSERT INTO [CENSUS].[DIM_CENSUS_SECTION] (SECTION_KEY, SESSION_CD, SECTION_ID, SECTION_LABEL, SECTION_STATUS, CENSUS_EXTRACT_NM, SECTION_ORDERING_ID, CREATE_TS)\nVALUES(1, 'N/A', 0, 'N/A', 'N/A', 'N/A', 0, '1900-01-01 12:00:00:00');\nSET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_SECTION] OFF;\n",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string",
+				"defaultValue": "20241"
+			},
+			"p_SESSION_NAME": {
+				"type": "string",
+				"defaultValue": "2024 Winter"
+			},
+			"p_SNAPSHOT_START_DT": {
+				"type": "string",
+				"defaultValue": "2/1/2024"
+			},
+			"p_SNAPSHOT_CATEGORY": {
+				"type": "string",
+				"defaultValue": "UofT Student Equity Census"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
