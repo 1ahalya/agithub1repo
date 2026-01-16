@@ -1,0 +1,114 @@
+{
+	"name": "pl_DIM_CENSUS_QUESTION",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Question",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Insert Question Row 1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"additionalColumns": [
+							{
+								"name": "SESSION_CD",
+								"value": {
+									"value": "@pipeline().parameters.p_EXTRACT_SESSION_CD",
+									"type": "Expression"
+								}
+							}
+						],
+						"sqlReaderQuery": {
+							"value": "SELECT QUESTION_ID, [NAME] AS QUESTION_NAME, SHORT_QSTN_TXT AS QUESTION_TXT_SHORT, FULL_QSTN_TXT AS QUESTION_TXT_FULL, CONCAT(UPPER(LEFT(OPTION_TYP,1)), LOWER(RIGHT(OPTION_TYP,LEN(OPTION_TYP)-1))) AS OPTION_TYPE, CASE WHEN REQUIRED=1 THEN 'Required' WHEN REQUIRED=0 THEN 'Optional' ELSE 'N/A' END AS QUESTION_REQD, CASE WHEN ACTIVE=1 THEN 'Active' WHEN ACTIVE=0 THEN 'Inactive' ELSE 'N/A' END AS QUESTION_STATUS, SECTION_ID AS QUESTION_SECTION_ID, AVOID_QSTN_IND AS SURVEY_AVOID_IND, ORDERING AS QUESTION_ORDERING_ID, CREATE_TS, UPDATE_TS, EXPIRY_TS\nFROM [CENSUS].[QUESTION]\nWHERE EXTRACT_SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}'\n",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [CENSUS].[DIM_CENSUS_QUESTION] WHERE SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}'\n",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "IRDGMI_UT_SRC_SH",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema": "SAP",
+							"table": "STXH"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "Insert Question Row 1",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"type": "Query",
+							"text": {
+								"value": "SET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_QUESTION] ON;\nIF NOT EXISTS(SELECT * FROM [CENSUS].[DIM_CENSUS_QUESTION] WHERE QUESTION_KEY=1)\nINSERT INTO [CENSUS].[DIM_CENSUS_QUESTION] (QUESTION_KEY, SESSION_CD, QUESTION_ID, QUESTION_NAME, QUESTION_TXT_SHORT, QUESTION_TXT_FULL, OPTION_TYPE, QUESTION_REQD, QUESTION_STATUS, QUESTION_SECTION_ID, QUESTION_ORDERING_ID, CREATE_TS)\nVALUES(1, 'N/A', 0, 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A',  0, 0, '1900-01-01 12:00:00:00');\nSET IDENTITY_INSERT [CENSUS].[DIM_CENSUS_QUESTION] OFF;",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
