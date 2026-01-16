@@ -1,0 +1,155 @@
+{
+	"name": "df_DIM_CENSUS_ANSWER",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcOption",
+					"description": "Get source Census Answer Options data"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcParentOption",
+					"description": "Get Source Census Answer Options data to compute aggregates"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkDIMCENSUSANSWER"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggrSubOptionCount"
+				},
+				{
+					"name": "lkpParentOption"
+				},
+				{
+					"name": "lkpSubOptionCount"
+				},
+				{
+					"name": "selColumns"
+				},
+				{
+					"name": "dcolAddColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20239')",
+				"}",
+				"source(output(",
+				"          EXTRACT_SESSION_CD as string,",
+				"          OPTION_ID as integer,",
+				"          QUESTION_ID as integer,",
+				"          ANSWER_CODE as string,",
+				"          LABEL as string,",
+				"          DESCRIPTION as string,",
+				"          ACTIVE as boolean,",
+				"          ANSWER_ORDERING_ID as integer,",
+				"          SUB_OPTION_ID as integer,",
+				"          CREATE_TS as timestamp,",
+				"          UPDATE_TS as timestamp,",
+				"          EXPIRY_TS as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT EXTRACT_SESSION_CD, OPTION_ID, QUESTION_ID, ISNULL(CODE, 'N/A') AS ANSWER_CODE, LABEL, [DESCRIPTION], ACTIVE, ISNULL(ORDERING, 0) AS ANSWER_ORDERING_ID, SUB_OPTION_ID, CREATE_TS, UPDATE_TS, EXPIRY_TS FROM [CENSUS].[OPTION] WHERE EXTRACT_SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcOption",
+				"source(output(",
+				"          lkp_OPTION_ID as integer,",
+				"          lkp_CODE as string,",
+				"          lkp_LABEL as string,",
+				"          lkp_SUB_OPTION_ID as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT OPTION_ID AS lkp_OPTION_ID, CODE AS lkp_CODE, LABEL AS lkp_LABEL, SUB_OPTION_ID AS lkp_SUB_OPTION_ID FROM [CENSUS].[OPTION] WHERE EXTRACT_SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcParentOption",
+				"srcParentOption aggregate(groupBy(lkp_SUB_OPTION_ID = iif(not(isNull(lkp_SUB_OPTION_ID)),lkp_SUB_OPTION_ID,lkp_OPTION_ID)),",
+				"     ANSWER_ACT_SUBOPT_CNT = count(lkp_SUB_OPTION_ID)) ~> aggrSubOptionCount",
+				"srcOption, srcParentOption lookup(SUB_OPTION_ID == lkp_OPTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpParentOption",
+				"lkpParentOption, aggrSubOptionCount lookup(iif(not(isNull(SUB_OPTION_ID)), SUB_OPTION_ID, OPTION_ID) == aggrSubOptionCount@lkp_SUB_OPTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpSubOptionCount",
+				"dcolAddColumns select(mapColumn(",
+				"          SESSION_CD = EXTRACT_SESSION_CD,",
+				"          ANSWER_OPTION_ID = OPTION_ID,",
+				"          ANSWER_QUESTION_ID = QUESTION_ID,",
+				"          ANSWER_CODE,",
+				"          ANSWER_LABEL = LABEL,",
+				"          ANSWER_DESCRIPTION = DESCRIPTION,",
+				"          ANSWER_PARENT_OPTION_ID = SUB_OPTION_ID,",
+				"          ANSWER_TYPE,",
+				"          CREATE_TS,",
+				"          UPDATE_TS,",
+				"          EXPIRY_TS,",
+				"          ANSWER_PARENT_LABEL = lkp_LABEL,",
+				"          ANSWER_ACT_SUBOPT_CNT,",
+				"          ANSWER_STATUS,",
+				"          ANSWER_ORDERING_ID",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selColumns",
+				"lkpSubOptionCount derive(ANSWER_TYPE = case(isNull(SUB_OPTION_ID), 'Option', not(isNull(SUB_OPTION_ID)), 'Sub-Option', 'N/A'),",
+				"          ANSWER_STATUS = case(equals(ACTIVE, true()), 'Active', equals(ACTIVE, false()), 'Inactive', 'N/A')) ~> dcolAddColumns",
+				"selColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:[(concat(\"DELETE FROM [CENSUS].[DIM_CENSUS_ANSWER] WHERE SESSION_CD='\", $p_SESSION_CD, \"'\"))],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkDIMCENSUSANSWER"
+			]
+		}
+	}
+}
