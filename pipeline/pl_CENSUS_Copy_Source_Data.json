@@ -1,0 +1,144 @@
+{
+	"name": "pl_CENSUS_Copy_Source_Data",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set SESSION_CD",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_SESSION_CD",
+					"value": {
+						"value": "@if(equals(int(substring(utcNow(),5,2)), 1), concat(substring(utcNow(),0,4), '1'), \nif(equals(int(substring(utcNow(),5,2)), 2), concat(substring(utcNow(),0,4), '1'), \nif(equals(int(substring(utcNow(),5,2)), 3), concat(substring(utcNow(),0,4), '1'), \nif(equals(int(substring(utcNow(),5,2)), 4), concat(substring(utcNow(),0,4), '1'), \nif(equals(int(substring(utcNow(),5,2)), 5), concat(substring(utcNow(),0,4), '5'), \nif(equals(int(substring(utcNow(),5,2)), 6), concat(substring(utcNow(),0,4), '5'), \nif(equals(int(substring(utcNow(),5,2)), 7), concat(substring(utcNow(),0,4), '5'), \nif(equals(int(substring(utcNow(),5,2)), 8), concat(substring(utcNow(),0,4), '5'), \nif(equals(int(substring(utcNow(),5,2)), 9), concat(substring(utcNow(),0,4), '9'), \nif(equals(int(substring(utcNow(),5,2)), 10), concat(substring(utcNow(),0,4), '9'), \nif(equals(int(substring(utcNow(),5,2)), 11), concat(substring(utcNow(),0,4), '9'), \nif(equals(int(substring(utcNow(),5,2)), 12), concat(substring(utcNow(),0,4), '9'), \n''))))))))))))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "exec_pl_Copy_Source_Tables",
+				"description": "Copy source data from DEMOGRAPHICS to UT-SRC",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Set SESSION_CD",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_Copy_Source_Tables",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_EXTRACT_SESSION_CD": {
+							"value": "@variables('v_SESSION_CD')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "OnErrorSendEmail",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "exec_pl_Copy_Source_Tables",
+						"dependencyConditions": [
+							"Failed",
+							"Skipped"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "UTBI_Send_Email",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"receiver": {
+							"value": "@pipeline().parameters.email_to",
+							"type": "Expression"
+						},
+						"subject": {
+							"value": "Pipeline @{pipeline().Pipeline} Failed",
+							"type": "Expression"
+						},
+						"message": {
+							"value": "The pipeline @{pipeline().Pipeline} (Step 1 of the Census workflow) has failed. Please investigate and restart as required.",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "OnSuccessSendEmail",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "exec_pl_Copy_Source_Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "UTBI_Send_Email",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"receiver": {
+							"value": "@pipeline().parameters.email_to",
+							"type": "Expression"
+						},
+						"subject": {
+							"value": "Pipeline @{pipeline().Pipeline} Run Complete",
+							"type": "Expression"
+						},
+						"message": {
+							"value": "The pipeline @{pipeline().Pipeline} (Step 1 of the Census workflow) has completed successfully.  Please run Step 2 of the process after student enrolments are finalized.",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"email_to": {
+				"type": "string",
+				"defaultValue": "anton.kruger@utoronto.ca,louise.tardif@utoronto.ca,eric.zhao@utoronto.ca,etl@utoronto.ca,ahalya.rajkumar@utoronto.ca"
+			}
+		},
+		"variables": {
+			"v_SESSION_CD": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
