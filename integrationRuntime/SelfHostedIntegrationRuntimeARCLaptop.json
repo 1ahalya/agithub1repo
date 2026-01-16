@@ -1,0 +1,6 @@
+{
+	"name": "SelfHostedIntegrationRuntimeARCLaptop",
+	"properties": {
+		"type": "SelfHosted"
+	}
+}
