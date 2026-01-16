@@ -1,0 +1,119 @@
+{
+	"name": "df_DIM_CENSUS_ANSWER_NOTE",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcAnswer",
+					"description": "Get Census Student Answers (feedback data)"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimPseudoPersonId",
+					"description": "Get Student Pseudo_ID data"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkDimCensusAnswerNote"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lkpPseudoPersonId"
+				},
+				{
+					"name": "selColumns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20239')",
+				"}",
+				"source(output(",
+				"          SESSION_CD as string,",
+				"          PERSON_ID as decimal(10,0),",
+				"          CENSUS_QUESTION_ID as integer,",
+				"          CENSUS_OPTION_ID as integer,",
+				"          NOTE as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT a.EXTRACT_SESSION_CD AS SESSION_CD, a.PERSON_ID, b.QUESTION_ID AS CENSUS_QUESTION_ID, a.OPTION_ID AS CENSUS_OPTION_ID, a.USER_SPECD AS NOTE FROM [CENSUS].[ANSWER] a JOIN [CENSUS].[OPTION] b ON a.OPTION_ID=b.OPTION_ID AND a.EXTRACT_SESSION_CD=b.EXTRACT_SESSION_CD WHERE a.EXTRACT_SESSION_CD='\", $p_SESSION_CD, \"' AND a.USER_SPECD IS NOT NULL AND LEN(a.USER_SPECD) > 0\")),",
+				"     format: 'query') ~> srcAnswer",
+				"source(output(",
+				"          p_PERSON_ID as decimal(20,0),",
+				"          PSEUDO_PERSON_ID as decimal(20,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: 'SELECT PERSON_ID AS p_PERSON_ID, PSEUDO_PERSON_ID FROM DWH.DIM_PSEUDO_PERSON_ID',",
+				"     format: 'query') ~> srcDimPseudoPersonId",
+				"srcAnswer, srcDimPseudoPersonId lookup(PERSON_ID == p_PERSON_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpPseudoPersonId",
+				"lkpPseudoPersonId select(mapColumn(",
+				"          SESSION_CD,",
+				"          CENSUS_QUESTION_ID,",
+				"          CENSUS_OPTION_ID,",
+				"          NOTE,",
+				"          PSEUDO_PERSON_ID",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selColumns",
+				"selColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:[(concat(\"DELETE FROM [CENSUS].[DIM_CENSUS_ANSWER_NOTE] WHERE SESSION_CD='\", $p_SESSION_CD, \"'\"))],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkDimCensusAnswerNote"
+			]
+		}
+	}
+}
