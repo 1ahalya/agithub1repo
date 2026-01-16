@@ -144,7 +144,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "SIS",
+							"pTable": "SESSION"
+						}
 					}
 				]
 			},
@@ -357,7 +361,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "SIS",
+							"pTable": "SESSION"
+						}
 					}
 				]
 			},
@@ -548,7 +556,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "SIS",
+							"pTable": "SESSION"
+						}
 					}
 				]
 			},
@@ -662,7 +674,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "SIS",
+							"pTable": "SESSION"
+						}
 					}
 				]
 			},
@@ -796,7 +812,11 @@
 				"outputs": [
 					{
 						"referenceName": "IRDGMI_UT_SRC",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"pSchema": "SIS",
+							"pTable": "SESSION"
+						}
 					}
 				]
 			},

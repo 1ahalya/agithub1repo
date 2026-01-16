@@ -1,0 +1,26 @@
+{
+	"name": "Gen_HANA_AMS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SAP_HANA_LS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Schema": {
+				"type": "string"
+			},
+			"Table": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "SapHanaTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@{concat(dataset().Schema,'.',dataset().Table)}",
+				"type": "Expression"
+			}
+		}
+	}
+}
