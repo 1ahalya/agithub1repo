@@ -1,0 +1,69 @@
+{
+	"name": "pl_ST_EDI_CENSUS_FACT",
+	"properties": {
+		"activities": [
+			{
+				"name": "Run ST_EDI_CENSUS_FACT",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_ST_EDI_CENSUS_FACT",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							},
+							"p_COUNT_DT": {
+								"value": "@pipeline().parameters.p_COUNT_DT",
+								"type": "Expression"
+							},
+							"p_SNAPSHOT_CATEGORY": {
+								"value": "'@{pipeline().parameters.p_SNAPSHOT_CATEGORY}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"srcMasterEnrol": {
+								"schema": "PIR",
+								"table": "ENROL"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string",
+				"defaultValue": "20241"
+			},
+			"p_COUNT_DT": {
+				"type": "string",
+				"defaultValue": "'2024-02-01'"
+			},
+			"p_SNAPSHOT_CATEGORY": {
+				"type": "string",
+				"defaultValue": "UofT Student Equity Census"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
