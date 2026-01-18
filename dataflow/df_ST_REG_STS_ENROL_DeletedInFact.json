@@ -1,0 +1,166 @@
+{
+	"name": "df_ST_REG_STS_ENROL_DeletedInFact",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcStRegStsEnrol",
+					"description": "STG_ST_REG_STS_ENROL Step 3: Get list of students already in STG_ST_REG_STS_ENROL (populated from REG_STS and PA.ENROL)."
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcGetStudentsToBeDeletedFromFact",
+					"description": "Run query to get list of students who are not active in current session from REG_STS"
+				},
+				{
+					"name": "srcPAEnrol",
+					"description": "Get list of students from PA.ENROL"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkStRegStsEnrol",
+					"description": "Export data to STG_ST_REG_STS_ENROL"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lkpRegStsExcludeStudents",
+					"description": "Lookup 'srcGetStudentsToBeDeletedFromFact'  to set  students to be excluded from active enrolled list"
+				},
+				{
+					"name": "dcolAddlCols",
+					"description": "Set DELETED_IN_FACT=1 if student is not actively enrolled for the session AND if student is not in PA.ENROL."
+				},
+				{
+					"name": "filRowsToUpdate",
+					"description": "Filter rows for update"
+				},
+				{
+					"name": "selColumns",
+					"description": "Select columns"
+				},
+				{
+					"name": "arowUpdate",
+					"description": "Set update condition"
+				},
+				{
+					"name": "dcolUpdateCondition",
+					"description": "Set condition for row update"
+				},
+				{
+					"name": "lkpPAStudentsEnrolled",
+					"description": "Lookup 'srcPAEnrol' to see if any excluded students are in PA.ENROL list"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20241')",
+				"}",
+				"source(output(",
+				"          SESSION_CD as string,",
+				"          STUDENT_ID as decimal(10,0),",
+				"          IN_REG_STS as boolean,",
+				"          IN_PA_ENROL as boolean,",
+				"          DELETED_IN_FACT as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SESSION_CD, STUDENT_ID, IN_REG_STS, IN_PA_ENROL, DELETED_IN_FACT FROM DWHS.STG_ST_REG_STS_ENROL WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcStRegStsEnrol",
+				"source(output(",
+				"          lkp_PERSON_ID as decimal(10,0),",
+				"          lkp_SESSION_CD as string,",
+				"          PRG_CNT as integer,",
+				"          EXCLUDE_CNT as integer,",
+				"          OUTCOME as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT A.PERSON_ID AS lkp_PERSON_ID, A.SESSION_CD AS lkp_SESSION_CD, A.PRG_CNT, C.EXCLUDE_CNT, CASE WHEN A.PRG_CNT = C.EXCLUDE_CNT  THEN 'EXCLUDE' ELSE 'KEEP' END AS OUTCOME FROM (SELECT PERSON_ID, SESSION_CD, COUNT(DISTINCT POST_CD) AS PRG_CNT FROM SIS.REG_STS WHERE SESSION_CD='\", $p_SESSION_CD, \"' GROUP BY PERSON_ID, SESSION_CD ) A LEFT JOIN (SELECT B.SESSION_CD, B.PERSON_ID, SUM(CASE WHEN B.REG_STS_CD in ('ADMDL','FINCA') THEN 1 ELSE 0 END) AS EXCLUDE_CNT FROM (SELECT ROW_NUMBER() OVER (PARTITION BY SESSION_CD, PERSON_ID, POST_CD ORDER BY CONVERT(DATETIME2,CONVERT(VARBINARY(6),REG_STS_TM)+CONVERT(BINARY(3),REG_STS_DT)) DESC) ROW_NUM, CONVERT(DATETIME2,CONVERT(VARBINARY(6),REG_STS_TM)+CONVERT(BINARY(3),REG_STS_DT)) AS REG_STS_TMST, SESSION_CD, PERSON_ID, POST_CD, REG_STS_CD, REG_STS_EFF_DT FROM SIS.REG_STS ) B WHERE B.ROW_NUM = 1 AND SESSION_CD='\", $p_SESSION_CD, \"' GROUP BY B.SESSION_CD, B.PERSON_ID) C ON A.PERSON_ID = C.PERSON_ID AND A.SESSION_CD = C.SESSION_CD WHERE CASE WHEN A.PRG_CNT = C.EXCLUDE_CNT  THEN 'EXCLUDE' ELSE 'KEEP' END = 'EXCLUDE'\")),",
+				"     format: 'query') ~> srcGetStudentsToBeDeletedFromFact",
+				"source(output(",
+				"          pa_STUDID as long,",
+				"          pa_SESSION_CD as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false) ~> srcPAEnrol",
+				"srcStRegStsEnrol, srcGetStudentsToBeDeletedFromFact lookup(STUDENT_ID == lkp_PERSON_ID",
+				"     && trim(SESSION_CD) == trim(lkp_SESSION_CD),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpRegStsExcludeStudents",
+				"lkpPAStudentsEnrolled derive(calc_DELETED_IN_FACT = case(and(OUTCOME == 'EXCLUDE', isNull(pa_STUDID)), true(), false()),",
+				"          LOAD_UPDATE_TS = case(and(not(isNull(lkp_PERSON_ID)), not(isNull(lkp_SESSION_CD))), fromUTC(currentUTC(), 'Canada/Eastern')),",
+				"          SESSION_CD = $p_SESSION_CD) ~> dcolAddlCols",
+				"dcolUpdateCondition filter(ALTER_ROW_CONDITION == 'Update') ~> filRowsToUpdate",
+				"arowUpdate select(mapColumn(",
+				"          STUDENT_ID,",
+				"          SESSION_CD,",
+				"          DELETED_IN_FACT = calc_DELETED_IN_FACT,",
+				"          LOAD_UPDATE_TS",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selColumns",
+				"filRowsToUpdate alterRow(updateIf(ALTER_ROW_CONDITION=='Update')) ~> arowUpdate",
+				"dcolAddlCols derive(ALTER_ROW_CONDITION = case(and(and(not(isNull(lkp_PERSON_ID)), not(isNull(lkp_SESSION_CD))), DELETED_IN_FACT != calc_DELETED_IN_FACT), 'Update', '')) ~> dcolUpdateCondition",
+				"lkpRegStsExcludeStudents, srcPAEnrol lookup(STUDENT_ID == pa_STUDID",
+				"     && trim(SESSION_CD) == trim(toString(pa_SESSION_CD)),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpPAStudentsEnrolled",
+				"selColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:false,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['STUDENT_ID','SESSION_CD'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkStRegStsEnrol"
+			]
+		}
+	}
+}
