@@ -1,0 +1,136 @@
+{
+	"name": "pl_STG_ST_REG_STS_ENROL",
+	"properties": {
+		"activities": [
+			{
+				"name": "df_ST_REG_STS_ENROL_InRegSts",
+				"description": "Start 3-step process to populate DWHS.STG_ST_REG_STS_ENROL table with students enrolments for the session:  Step 1: Get students from SIS.REG_STS",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_ST_REG_STS_ENROL_InRegSts",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "df_ST_REG_STS_ENROL_InPaEnrol",
+				"description": "Step 2: Append any students from PA.ENROL not already in table.",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "df_ST_REG_STS_ENROL_InRegSts",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_ST_REG_STS_ENROL_InPaEnrol",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"srcPIREnrol": {
+								"schema": "PA",
+								"table": "ENROL"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "df_ST_REG_STS_ENROL_DeletedInFact",
+				"description": "Step 3: Check student SIS status and mark any students not actively enrolled as DELETED_IN_FACT=1.",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "df_ST_REG_STS_ENROL_InPaEnrol",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_ST_REG_STS_ENROL_DeletedInFact",
+						"type": "DataFlowReference",
+						"parameters": {
+							"p_SESSION_CD": {
+								"value": "'@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"srcPAEnrol": {
+								"schema": "PA",
+								"table": "ENROL"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string",
+				"defaultValue": "20241"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
