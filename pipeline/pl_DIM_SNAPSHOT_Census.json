@@ -1,0 +1,107 @@
+{
+	"name": "pl_DIM_SNAPSHOT_Census",
+	"properties": {
+		"activities": [
+			{
+				"name": "Insert Snapshot Record",
+				"type": "Script",
+				"dependsOn": [
+					{
+						"activity": "Get Max Snapshot Id",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"scripts": [
+						{
+							"parameters": [
+								{
+									"name": "snapshot_id_next",
+									"type": "Int32",
+									"value": {
+										"value": "@add(int(activity('Get Max Snapshot Id').output.firstRow['SNAPSHOT_ID_MAX']),1)",
+										"type": "Expression"
+									},
+									"direction": "Input"
+								},
+								{
+									"name": "snapshot_category",
+									"type": "String",
+									"value": {
+										"value": "@pipeline().parameters.p_SNAPSHOT_CATEGORY",
+										"type": "Expression"
+									},
+									"direction": "Input"
+								},
+								{
+									"name": "snapshot_period_type",
+									"type": "String",
+									"value": "EDI Census Date",
+									"direction": "Input"
+								}
+							],
+							"type": "Query",
+							"text": {
+								"value": "IF NOT EXISTS(SELECT * FROM [DWH].[DIM_SNAPSHOT] WHERE SNAPSHOT_CATEGORY=@snapshot_category AND SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}')\nINSERT INTO [DWH].[DIM_SNAPSHOT] (SNAPSHOT_ID, START_DT, END_DT, PERIOD_TYPE, SNAPSHOT_CATEGORY, SESSION_CD)\nVALUES(@snapshot_id_next, FORMAT(CAST('@{pipeline().parameters.p_COUNT_DT}' AS DATE), 'yyyy-MM-dd'), FORMAT(CAST('@{pipeline().parameters.p_COUNT_DT}' AS DATE), 'yyyy-MM-dd'), @snapshot_period_type, @snapshot_category, '@{pipeline().parameters.p_EXTRACT_SESSION_CD}');\nSELECT * FROM [DWH].[DIM_SNAPSHOT] WHERE SNAPSHOT_CATEGORY=@snapshot_category AND SESSION_CD='@{pipeline().parameters.p_EXTRACT_SESSION_CD}'",
+								"type": "Expression"
+							}
+						}
+					],
+					"scriptBlockExecutionTimeout": "02:00:00"
+				}
+			},
+			{
+				"name": "Get Max Snapshot Id",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": "SELECT MAX(SNAPSHOT_ID) AS SNAPSHOT_ID_MAX FROM DWH.DIM_SNAPSHOT",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"p_EXTRACT_SESSION_CD": {
+				"type": "string",
+				"defaultValue": "20241"
+			},
+			"p_COUNT_DT": {
+				"type": "string",
+				"defaultValue": "2/1/2024"
+			},
+			"p_SNAPSHOT_CATEGORY": {
+				"type": "string",
+				"defaultValue": "UofT Student Equity Census"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
