@@ -1,0 +1,106 @@
+{
+	"name": "df_ST_REG_STS_ENROL_InRegSts",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcRegSts",
+					"description": "STG_ST_REG_STS_ENROL Step 1: Get list of students from SIS.REG_STS"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkStRegStsEnrol",
+					"description": "Export data to STG_ST_REG_STS_ENROL"
+				}
+			],
+			"transformations": [
+				{
+					"name": "dcolAddlCols",
+					"description": "Set IN_REG_STS=1 as students are sourced from REG_STS in this dataflow"
+				},
+				{
+					"name": "aggrDistinctStudentId",
+					"description": "Aggregate list of students to get last record"
+				},
+				{
+					"name": "selColumns",
+					"description": "Select columns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20239')",
+				"}",
+				"source(output(",
+				"          SESSION_CD as string,",
+				"          PERSON_ID as decimal(10,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SESSION_CD, PERSON_ID FROM SIS.REG_STS WHERE SESSION_CD='\", $p_SESSION_CD, \"' GROUP BY SESSION_CD, PERSON_ID\")),",
+				"     format: 'query') ~> srcRegSts",
+				"aggrDistinctStudentId derive(IN_REG_STS = true(),",
+				"          IN_PA_ENROL = false(),",
+				"          SESSION_CD = $p_SESSION_CD) ~> dcolAddlCols",
+				"srcRegSts aggregate(groupBy(PERSON_ID),",
+				"     STUDENT_ID = last(PERSON_ID)) ~> aggrDistinctStudentId",
+				"dcolAddlCols select(mapColumn(",
+				"          STUDENT_ID,",
+				"          IN_REG_STS,",
+				"          IN_PA_ENROL,",
+				"          SESSION_CD",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selColumns",
+				"selColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:[(concat(\"DELETE FROM [DWHS].[STG_ST_REG_STS_ENROL] WHERE SESSION_CD='\", $p_SESSION_CD, \"'\"))],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkStRegStsEnrol"
+			]
+		}
+	}
+}
