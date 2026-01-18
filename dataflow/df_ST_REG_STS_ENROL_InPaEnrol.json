@@ -1,0 +1,131 @@
+{
+	"name": "df_ST_REG_STS_ENROL_InPaEnrol",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"name": "srcPIREnrol",
+					"description": "STG_ST_REG_STS_ENROL Step 2: Get list of enrolled students from PA.ENROL"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcStRegStsEnrol",
+					"description": "Get list of students already in STG_ST_REG_STS_ENROL (populated in step 1 from REG_STS)."
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkStRegStsEnrol",
+					"description": "Export data to STG_ST_REG_STS_ENROL"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lkpExistingRow",
+					"description": "Lookup 'srcStRegStsEnrol' for existing students"
+				},
+				{
+					"name": "dcolAddlCols",
+					"description": "Set IN_PA_ENROL=1 as students are sourced from PA.ENROL in this dataflow"
+				},
+				{
+					"name": "filRowsToInsert",
+					"description": "Filter students to be appended only if they do not exist already in REG_ST_REG_STS_ENROL."
+				},
+				{
+					"name": "aggrDistinctStudentId",
+					"description": "Aggregate list of students to get last record"
+				},
+				{
+					"name": "selColumns",
+					"description": "Select columns"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20239')",
+				"}",
+				"source(output(",
+				"          STUDID as long,",
+				"          SESSION_CD as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false) ~> srcPIREnrol",
+				"source(output(",
+				"          lkp_SESSION_CD as string,",
+				"          lkp_STUDENT_ID as decimal(10,0),",
+				"          lkp_IN_REG_STS as boolean,",
+				"          lkp_IN_PA_ENROL as boolean,",
+				"          lkp_DELETED_IN_FACT as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SESSION_CD as lkp_SESSION_CD, STUDENT_ID as lkp_STUDENT_ID, IN_REG_STS as lkp_IN_REG_STS, IN_PA_ENROL AS lkp_IN_PA_ENROL, DELETED_IN_FACT AS lkp_DELETED_IN_FACT FROM DWHS.STG_ST_REG_STS_ENROL WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcStRegStsEnrol",
+				"aggrDistinctStudentId, srcStRegStsEnrol lookup(STUDENT_ID == lkp_STUDENT_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpExistingRow",
+				"lkpExistingRow derive(IN_REG_STS = false(),",
+				"          IN_PA_ENROL = true(),",
+				"          SESSION_CD = $p_SESSION_CD) ~> dcolAddlCols",
+				"dcolAddlCols filter(and(isNull(lkp_STUDENT_ID), isNull(lkp_SESSION_CD))) ~> filRowsToInsert",
+				"srcPIREnrol aggregate(groupBy(STUDID),",
+				"     STUDENT_ID = last(STUDID)) ~> aggrDistinctStudentId",
+				"filRowsToInsert select(mapColumn(",
+				"          STUDENT_ID,",
+				"          IN_REG_STS,",
+				"          IN_PA_ENROL,",
+				"          SESSION_CD",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selColumns",
+				"selColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkStRegStsEnrol"
+			]
+		}
+	}
+}
