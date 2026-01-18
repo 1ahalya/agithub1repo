@@ -1,0 +1,519 @@
+{
+	"name": "df_ST_EDI_CENSUS_FACT",
+	"properties": {
+		"folder": {
+			"name": "Census"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcStgStRegStsEnrol",
+					"description": "Get master list of students from STG_ST_REG_STS_ENROL where DELETED_IN_FACT=0"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcAnswer",
+					"description": "Get Source Census data"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcSession",
+					"description": "Get Session Data"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcSnapshot",
+					"description": "Get Snapshot data"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimSection",
+					"description": "Get data from DIM_CENSUS_SECTION"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimQuestion",
+					"description": "Get data from DIM_CENSUS_QUESTION"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimAnswer",
+					"description": "Get data from DIM_CENSUS_ANSWER"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimAnswerNote",
+					"description": "Get data from DIM_CENSUS_ANSWER_NOTE"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_UT_SRC",
+						"type": "DatasetReference"
+					},
+					"name": "srcCensus",
+					"description": "Get data from Source CENSUS.CENSUS"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcPseudoPersonId",
+					"description": "Get data from DWH.DIM_PSEUDO_PERSON_ID"
+				},
+				{
+					"name": "srcMasterEnrol",
+					"description": "Get data from UT_PIR PA.ENROL"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcDimStudentScd",
+					"description": "Get data from DWH.DIM_STUDENT_SCD"
+				},
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "srcMaxCensusLinkKey",
+					"description": "Get max CENSUS_LINK_KEY to set start value for SURROGATE KEY"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					},
+					"name": "sinkSTEDICENSUSFACT",
+					"description": "Export data to ST_EDI_CENSUS_FACT"
+				}
+			],
+			"transformations": [
+				{
+					"name": "lkpSession",
+					"description": "Lookup Session for SESSION_KEY"
+				},
+				{
+					"name": "dcolFactColumns1",
+					"description": "Set derived columns"
+				},
+				{
+					"name": "lkpSnapshot",
+					"description": "Lookup Snapshot for SNAPSHOT_ID"
+				},
+				{
+					"name": "lkpDimSection",
+					"description": "Lookup DIM_CENSUS_SECTION for SECTION_KEY"
+				},
+				{
+					"name": "selFactColumns",
+					"description": "Select required columns"
+				},
+				{
+					"name": "lkpDimQuestion",
+					"description": "Lookup DIM_CENSUS_QUESTION for QUESTION_KEY"
+				},
+				{
+					"name": "lkpDimAnswer",
+					"description": "Lookup DIM_CENSUS_ANSWER for ANSWER_KEY"
+				},
+				{
+					"name": "lkpDimAnswerNote",
+					"description": "Lookup DIM_CENSUS_ANSWER_NOTE for ANSWER_NOTE_KEY"
+				},
+				{
+					"name": "lkpPseudoPersonId",
+					"description": "Lookup DIM_PSEUDO_PERSON_ID for PSEUDO_PERSON_ID_KEY"
+				},
+				{
+					"name": "lkpCensus",
+					"description": "Lookup CENSUS.CENSUS"
+				},
+				{
+					"name": "dcolFactColumns2",
+					"description": "Set derived columns based on previously derived values"
+				},
+				{
+					"name": "lkpMasterEnrol",
+					"description": "Lookup PA.ENROL for MATCH_MASTER_ENROL_IND"
+				},
+				{
+					"name": "lkpAnswer",
+					"description": "Lookup Source Census data"
+				},
+				{
+					"name": "aggrTotalAnsCount",
+					"description": "Aggregate to compute TOTAL_QN_OPTION_ANS_CNT and TOTAL_QN_SUBOPTION_ANS_CNT"
+				},
+				{
+					"name": "lkpAggrTotalAnsCount",
+					"description": "Lookup aggrTotalAnsCount to compute TOTAL_QN_OPTION_ANS_CNT and TOTAL_QN_SUBOPTION_ANS_CNT"
+				},
+				{
+					"name": "aggrCountByPerson",
+					"description": "Aggregate to compute NO_CENSUS_IND"
+				},
+				{
+					"name": "lkpAggrCountByPerson",
+					"description": "Lookup 'aggrCountByPerson' for NO_CENSUS_IND"
+				},
+				{
+					"name": "aggrOptOut",
+					"description": "Aggregate to compute CENSUS_OPT_OUT_IND"
+				},
+				{
+					"name": "lkpAggrOptOut",
+					"description": "Lookup 'aggrOptOut' for CENSUS_OPT_OUT_IND"
+				},
+				{
+					"name": "srKeyCensusLink",
+					"description": "Apply surrogate key CENSUS_LINK_KEY for PERSON_ID/SESSION_CD group"
+				},
+				{
+					"name": "lkpDimStudentScd",
+					"description": "Lookup DIM_STUDENT_SCD for STUDENT_KEY"
+				},
+				{
+					"name": "lkpMaxCensusLinkKey",
+					"description": "Lookup 'srcMaxCensusLinkKey' to get start value for CENSUS_LINK_KEY"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     p_SESSION_CD as string ('20241'),",
+				"     p_COUNT_DT as string ('2024-02-01'),",
+				"     p_SNAPSHOT_CATEGORY as string ('UofT Student Equity Census')",
+				"}",
+				"source(output(",
+				"          PERSON_ID as decimal(10,0),",
+				"          REG_EXTRACT_SESSION_CD as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT STUDENT_ID AS PERSON_ID, SESSION_CD AS REG_EXTRACT_SESSION_CD FROM DWHS.STG_ST_REG_STS_ENROL WHERE SESSION_CD='\", $p_SESSION_CD, \"' AND DELETED_IN_FACT=0 GROUP BY STUDENT_ID, SESSION_CD\")),",
+				"     format: 'query') ~> srcStgStRegStsEnrol",
+				"source(output(",
+				"          answer_PERSON_ID as decimal(10,0),",
+				"          OPTION_ID as integer,",
+				"          ANSWER_CREATE_DT as timestamp,",
+				"          ANSWER_UPDATE_DT as timestamp,",
+				"          EXTRACT_SESSION_CD as string,",
+				"          QUESTION_ID as integer,",
+				"          SUB_OPTION_ID as integer,",
+				"          CODE as string,",
+				"          SECTION_ID as integer,",
+				"          AVOID_QSTN_IND as boolean,",
+				"          QUESTION_REQUIRED as boolean",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT PERSON_ID AS answer_PERSON_ID, a.OPTION_ID, a.CREATE_DT AS ANSWER_CREATE_DT, a.UPDATE_DT AS ANSWER_UPDATE_DT, a.EXTRACT_SESSION_CD, b.QUESTION_ID, b.SUB_OPTION_ID, b.CODE, c.SECTION_ID, c.AVOID_QSTN_IND, c.[REQUIRED] AS QUESTION_REQUIRED FROM CENSUS.ANSWER a JOIN CENSUS.[OPTION] b ON a.OPTION_ID=b.OPTION_ID AND a.EXTRACT_SESSION_CD=b.EXTRACT_SESSION_CD JOIN CENSUS.QUESTION c ON b.QUESTION_ID=c.QUESTION_ID AND b.EXTRACT_SESSION_CD=c.EXTRACT_SESSION_CD WHERE a.EXTRACT_SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcAnswer",
+				"source(output(",
+				"          SESSION_KEY as integer,",
+				"          session_SESSION_CD as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SESSION_KEY, SESSION_CD AS session_SESSION_CD FROM DWH.DIM_SESSION WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcSession",
+				"source(output(",
+				"          SNAPSHOT_ID as short,",
+				"          snapshot_SESSION_CD as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SNAPSHOT_ID, SESSION_CD AS snapshot_SESSION_CD FROM DWH.DIM_SNAPSHOT WHERE SESSION_CD='\", $p_SESSION_CD, \"' AND SNAPSHOT_CATEGORY='\", $p_SNAPSHOT_CATEGORY, \"'\")),",
+				"     format: 'query') ~> srcSnapshot",
+				"source(output(",
+				"          SECTION_KEY as integer,",
+				"          section_SESSION_CD as string,",
+				"          section_SECTION_ID as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT SECTION_KEY, SESSION_CD AS section_SESSION_CD, SECTION_ID AS section_SECTION_ID FROM CENSUS.DIM_CENSUS_SECTION WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcDimSection",
+				"source(output(",
+				"          QUESTION_KEY as integer,",
+				"          question_SESSION_CD as string,",
+				"          question_QUESTION_ID as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT QUESTION_KEY, SESSION_CD AS question_SESSION_CD, QUESTION_ID AS question_QUESTION_ID FROM CENSUS.DIM_CENSUS_QUESTION WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcDimQuestion",
+				"source(output(",
+				"          ANSWER_KEY as integer,",
+				"          answer_SESSION_CD as string,",
+				"          answer_QUESTION_ID as integer,",
+				"          answer_OPTION_ID as integer,",
+				"          ANSWER_TYPE as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT ANSWER_KEY, SESSION_CD AS answer_SESSION_CD, ANSWER_QUESTION_ID AS answer_QUESTION_ID, ANSWER_OPTION_ID AS answer_OPTION_ID, ANSWER_TYPE FROM CENSUS.DIM_CENSUS_ANSWER WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcDimAnswer",
+				"source(output(",
+				"          ANSWER_NOTE_KEY as integer,",
+				"          answerNote_SESSION_CD as string,",
+				"          answerNote_QUESTION_ID as integer,",
+				"          answerNote_OPTION_ID as integer,",
+				"          answerNote_PERSON_ID as decimal(20,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT a.ANSWER_NOTE_KEY, a.SESSION_CD AS answerNote_SESSION_CD, a.CENSUS_QUESTION_ID AS answerNote_QUESTION_ID, a.CENSUS_OPTION_ID AS answerNote_OPTION_ID, ISNULL(b.PERSON_ID, 1) AS answerNote_PERSON_ID FROM CENSUS.DIM_CENSUS_ANSWER_NOTE a LEFT JOIN DWH.DIM_PSEUDO_PERSON_ID b ON a.PSEUDO_PERSON_ID=b.PSEUDO_PERSON_ID WHERE a.SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcDimAnswerNote",
+				"source(output(",
+				"          census_PERSON_ID as decimal(10,0),",
+				"          census_COMPLETE_DT as timestamp,",
+				"          census_CREATE_DT as timestamp,",
+				"          census_SESSION_CD as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT PERSON_ID AS census_PERSON_ID, COMPLETE_DT AS census_COMPLETE_DT, CREATE_DT AS census_CREATE_DT, EXTRACT_SESSION_CD AS census_SESSION_CD FROM CENSUS.CENSUS WHERE EXTRACT_SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcCensus",
+				"source(output(",
+				"          p_PERSON_ID as decimal(20,0),",
+				"          PSEUDO_PERSON_ID as decimal(20,0),",
+				"          PSEUDO_PERSON_ID_KEY as decimal(20,0)",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT PERSON_ID AS p_PERSON_ID, PSEUDO_PERSON_ID, PSEUDO_PERSON_ID_KEY FROM DWH.DIM_PSEUDO_PERSON_ID\")),",
+				"     format: 'query') ~> srcPseudoPersonId",
+				"source(output(",
+				"          master_STUDID as long,",
+				"          master_SESSION_CD as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false) ~> srcMasterEnrol",
+				"source(output(",
+				"          scd_STUDENT_KEY as integer,",
+				"          scd_SESSION_CD as string,",
+				"          scd_STUDENT_ID as decimal(10,0),",
+				"          scd_START_DT as date,",
+				"          scd_END_DT as date",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT STUDENT_KEY AS scd_STUDENT_KEY, SESSION_CD AS scd_SESSION_CD, STUDENT_ID AS scd_STUDENT_ID, START_DT AS scd_START_DT, END_DT AS scd_END_DT FROM DWH.DIM_STUDENT_SCD WHERE SESSION_CD='\", $p_SESSION_CD, \"'\")),",
+				"     format: 'query') ~> srcDimStudentScd",
+				"source(output(",
+				"          max_CENSUS_LINK_KEY as integer,",
+				"          max_SESSION_CD as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     query: (concat(\"SELECT ISNULL(MAX(CENSUS_LINK_KEY), 10000) AS max_CENSUS_LINK_KEY, '\", $p_SESSION_CD, \"' AS max_SESSION_CD FROM CENSUS.ST_EDI_CENSUS_FACT\")),",
+				"     format: 'query') ~> srcMaxCensusLinkKey",
+				"lkpAnswer, srcSession lookup(trim(REG_EXTRACT_SESSION_CD) == trim(session_SESSION_CD),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpSession",
+				"lkpMaxCensusLinkKey derive(CENSUS_LINK_KEY = add(max_CENSUS_LINK_KEY, CENSUS_LINK_KEY),",
+				"          SESSION_KEY = case(isNull(SESSION_KEY), 1, SESSION_KEY),",
+				"          SNAPSHOT_ID = case(isNull(SNAPSHOT_ID), 0, toInteger(SNAPSHOT_ID)),",
+				"          STUDENT_KEY = case(isNull(scd_STUDENT_KEY), 1, scd_STUDENT_KEY),",
+				"          PSEUDO_PERSON_ID_KEY = case(isNull(PSEUDO_PERSON_ID_KEY), 1, toInteger(PSEUDO_PERSON_ID_KEY)),",
+				"          SECTION_KEY = case(isNull(SECTION_KEY), 1, SECTION_KEY),",
+				"          QUESTION_KEY = case(isNull(QUESTION_KEY), 1, QUESTION_KEY),",
+				"          ANSWER_KEY = case(isNull(ANSWER_KEY), 1, ANSWER_KEY),",
+				"          ANSWER_NOTE_KEY = case(isNull(ANSWER_NOTE_KEY), 1, ANSWER_NOTE_KEY),",
+				"          RESPONSE_CNT = case(isNull(census_COMPLETE_DT), 0, 1),",
+				"          OPTION_IND = case(ANSWER_TYPE == 'Option', 1, 0),",
+				"          SUBOPTION_IND = case(ANSWER_TYPE == 'Sub-Option', 1, 0),",
+				"          MATCH_MASTER_ENROL_IND = case(isNull(master_STUDID), 0, 1),",
+				"          NO_CENSUS_IND = case(REG_PERSON_ANS_COUNT == 1, 1, 0)) ~> dcolFactColumns1",
+				"lkpSession, srcSnapshot lookup(trim(REG_EXTRACT_SESSION_CD) == trim(snapshot_SESSION_CD),",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpSnapshot",
+				"lkpSnapshot, srcDimSection lookup(trim(EXTRACT_SESSION_CD) == trim(section_SESSION_CD)",
+				"     && SECTION_ID == section_SECTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpDimSection",
+				"dcolFactColumns2 select(mapColumn(",
+				"          CENSUS_LINK_KEY,",
+				"          SESSION_KEY,",
+				"          SNAPSHOT_ID,",
+				"          PERSON_ID = aggr_reg_PERSON_ID,",
+				"          STUDENT_KEY,",
+				"          PSEUDO_PERSON_ID_KEY,",
+				"          SECTION_KEY,",
+				"          QUESTION_KEY,",
+				"          ANSWER_KEY,",
+				"          ANSWER_NOTE_KEY,",
+				"          CENSUS_CREATE_TM = census_CREATE_DT,",
+				"          CENSUS_COMPLETE_TM = census_COMPLETE_DT,",
+				"          ANSWER_CREATE_TM = ANSWER_CREATE_DT,",
+				"          ANSWER_UPDATE_TM = ANSWER_UPDATE_DT,",
+				"          RESPONSE_CNT,",
+				"          OPTION_IND,",
+				"          SUBOPTION_IND,",
+				"          TOTAL_QN_OPTION_ANS_CNT,",
+				"          TOTAL_QN_SUBOPTION_ANS_CNT,",
+				"          CENSUS_OPT_OUT_IND,",
+				"          MATCH_MASTER_ENROL_IND,",
+				"          NO_CENSUS_IND",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selFactColumns",
+				"lkpDimSection, srcDimQuestion lookup(trim(EXTRACT_SESSION_CD) == trim(question_SESSION_CD)",
+				"     && QUESTION_ID == question_QUESTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpDimQuestion",
+				"lkpDimQuestion, srcDimAnswer lookup(trim(EXTRACT_SESSION_CD) == trim(answer_SESSION_CD)",
+				"     && OPTION_ID == answer_OPTION_ID",
+				"     && QUESTION_ID == answer_QUESTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpDimAnswer",
+				"lkpDimAnswer, srcDimAnswerNote lookup(trim(EXTRACT_SESSION_CD) == trim(answerNote_SESSION_CD)",
+				"     && PERSON_ID == answerNote_PERSON_ID",
+				"     && OPTION_ID == answerNote_OPTION_ID",
+				"     && QUESTION_ID == answerNote_QUESTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpDimAnswerNote",
+				"lkpCensus, srcPseudoPersonId lookup(PERSON_ID == p_PERSON_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpPseudoPersonId",
+				"lkpDimStudentScd, srcCensus lookup(trim(EXTRACT_SESSION_CD) == trim(census_SESSION_CD)",
+				"     && answer_PERSON_ID == census_PERSON_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpCensus",
+				"dcolFactColumns1 derive(TOTAL_QN_OPTION_ANS_CNT = case(or(SUB_OPTION_ID == 0, ANSWER_KEY == 1), toInteger(null()), and(OPTION_IND == 1, isNull(TOTAL_QN_OPTION_ANS_CNT)), 1, toInteger(TOTAL_QN_OPTION_ANS_CNT)),",
+				"          TOTAL_QN_SUBOPTION_ANS_CNT = case(or(SUB_OPTION_ID == 0, ANSWER_KEY == 1), toInteger(null()), SUBOPTION_IND == 1, toInteger(TOTAL_QN_SUBOPTION_ANS_CNT), SUBOPTION_IND == 0, 0),",
+				"          CENSUS_OPT_OUT_IND = case(NO_CENSUS_IND ==  1, toInteger(null()), PERSON_OPT_OUT_COUNT == PERSON_REQD_QUESTION_COUNT, 1, 0)) ~> dcolFactColumns2",
+				"lkpAggrTotalAnsCount, srcMasterEnrol lookup(trim(REG_EXTRACT_SESSION_CD) == trim(toString(master_SESSION_CD))",
+				"     && PERSON_ID == master_STUDID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpMasterEnrol",
+				"srKeyCensusLink, srcAnswer lookup(trim(REG_EXTRACT_SESSION_CD) == trim(EXTRACT_SESSION_CD)",
+				"     && PERSON_ID == answer_PERSON_ID,",
+				"     multiple: true,",
+				"     broadcast: 'auto')~> lkpAnswer",
+				"srcAnswer aggregate(groupBy(aggr_option_PERSON_ID = answer_PERSON_ID,",
+				"          aggr_option_QUESTION_ID = QUESTION_ID),",
+				"     TOTAL_QN_OPTION_ANS_CNT = countIf(isNull(SUB_OPTION_ID)),",
+				"          TOTAL_QN_SUBOPTION_ANS_CNT = countIf(not(isNull(SUB_OPTION_ID)))) ~> aggrTotalAnsCount",
+				"lkpPseudoPersonId, aggrTotalAnsCount lookup(PERSON_ID == aggr_option_PERSON_ID",
+				"     && QUESTION_ID == aggr_option_QUESTION_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpAggrTotalAnsCount",
+				"lkpAnswer aggregate(groupBy(aggr_reg_PERSON_ID = PERSON_ID),",
+				"     REG_PERSON_ANS_COUNT = count(PERSON_ID)) ~> aggrCountByPerson",
+				"lkpMasterEnrol, aggrCountByPerson lookup(PERSON_ID == aggr_reg_PERSON_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpAggrCountByPerson",
+				"srcAnswer aggregate(groupBy(aggr_answer_PERSON_ID = answer_PERSON_ID),",
+				"     PERSON_OPT_OUT_COUNT = countIf(and(endsWith(CODE, '_AVOID_ANS'), QUESTION_REQUIRED==true())),",
+				"          PERSON_REQD_QUESTION_COUNT = countIf(QUESTION_REQUIRED == true())) ~> aggrOptOut",
+				"lkpAggrCountByPerson, aggrOptOut lookup(PERSON_ID == aggr_answer_PERSON_ID,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpAggrOptOut",
+				"srcStgStRegStsEnrol keyGenerate(output(CENSUS_LINK_KEY as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> srKeyCensusLink",
+				"lkpDimAnswerNote, srcDimStudentScd lookup(trim(REG_EXTRACT_SESSION_CD) == trim(scd_SESSION_CD)",
+				"     && PERSON_ID == scd_STUDENT_ID",
+				"     && toDate($p_COUNT_DT) >= scd_START_DT",
+				"     && toDate($p_COUNT_DT) <= scd_END_DT,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'right')~> lkpDimStudentScd",
+				"lkpAggrOptOut, srcMaxCensusLinkKey lookup(REG_EXTRACT_SESSION_CD == max_SESSION_CD,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> lkpMaxCensusLinkKey",
+				"selFactColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          SESSION_KEY as integer,",
+				"          SESSION_CD as string,",
+				"          SES_END_DT as date,",
+				"          SES_START_DT as date,",
+				"          SES_ENGLISH_NAME as string,",
+				"          FEES_ACTIVE_IND as string,",
+				"          CURRENT_SESSION_IND as string,",
+				"          PARENT_SESSION_CD as string,",
+				"          SUMMER_TERM1 as string,",
+				"          SUMMER_TERM2 as string,",
+				"          ACADEMIC_PERIOD as string,",
+				"          FISCAL_YR as string,",
+				"          ACADEMIC_YR as string,",
+				"          CALENDAR_YR as string,",
+				"          SESSION_YEAR_AS_INT as integer,",
+				"          SESSION_AS_INT as integer,",
+				"          SESSION_MONTH_AS_INT as integer,",
+				"          SES_ENGLISH_NAME2 as string,",
+				"          YEARS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSIONS_BEFORE_CURRENT_AMT as integer,",
+				"          SESSION_TYPE as string",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:[(concat(\"DELETE FROM CENSUS.ST_EDI_CENSUS_FACT WHERE SESSION_KEY IN (SELECT SESSION_KEY FROM DWH.DIM_SESSION WHERE SESSION_CD='\", $p_SESSION_CD, \"')\"))],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkSTEDICENSUSFACT"
+			]
+		}
+	}
+}
