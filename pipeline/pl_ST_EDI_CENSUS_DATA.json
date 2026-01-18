@@ -1,0 +1,57 @@
+{
+	"name": "pl_ST_EDI_CENSUS_DATA",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy Census Data",
+				"description": "Copy Census data for the session to a flat file for reporting.",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlMISource",
+						"sqlReaderQuery": {
+							"value": "SELECT a.CENSUS_FACT_KEY, a.CENSUS_LINK_KEY, b.SESSION_CD, a.PERSON_ID, a.STUDENT_KEY, a.PSEUDO_PERSON_ID_KEY, a.CENSUS_CREATE_TM, a.CENSUS_COMPLETE_TM, a.ANSWER_CREATE_TM, a.ANSWER_UPDATE_TM, a.RESPONSE_CNT, a.OPTION_IND, a.SUBOPTION_IND, \na.TOTAL_QN_OPTION_ANS_CNT, a.TOTAL_QN_SUBOPTION_ANS_CNT, a.CENSUS_OPT_OUT_IND, a.MATCH_MASTER_ENROL_IND, a.NO_CENSUS_IND,\nc.SECTION_ID, c.SECTION_LABEL, c.SECTION_STATUS, c.CENSUS_EXTRACT_NM, c.SECTION_ORDERING_ID,\nd.QUESTION_ID, d.QUESTION_NAME, d.QUESTION_TXT_SHORT, d.QUESTION_TXT_FULL, d.OPTION_TYPE, d.QUESTION_REQD, d.QUESTION_STATUS, d.QUESTION_SECTION_ID, d.SURVEY_AVOID_IND, d.QUESTION_ORDERING_ID,\ne.ANSWER_OPTION_ID, e.ANSWER_QUESTION_ID, e.ANSWER_CODE, e.ANSWER_LABEL, e.ANSWER_DESCRIPTION, e.ANSWER_TYPE, e.ANSWER_PARENT_OPTION_ID, e.ANSWER_PARENT_LABEL, e.ANSWER_ACT_SUBOPT_CNT, e.ANSWER_STATUS, e.ANSWER_ORDERING_ID, \nf.CENSUS_QUESTION_ID, f.CENSUS_OPTION_ID, g.SNAPSHOT_CATEGORY\nFROM CENSUS.ST_EDI_CENSUS_FACT a JOIN DWH.DIM_SESSION b ON a.SESSION_KEY=b.SESSION_KEY\nJOIN CENSUS.DIM_CENSUS_SECTION c ON a.SECTION_KEY=c.SECTION_KEY\nJOIN CENSUS.DIM_CENSUS_QUESTION d on a.QUESTION_KEY=d.QUESTION_KEY\nJOIN CENSUS.DIM_CENSUS_ANSWER e ON a.ANSWER_KEY=e.ANSWER_KEY\nJOIN CENSUS.DIM_CENSUS_ANSWER_NOTE f ON a.ANSWER_NOTE_KEY=f.ANSWER_NOTE_KEY\nJOIN DWH.DIM_SNAPSHOT g ON a.SNAPSHOT_ID=g.SNAPSHOT_ID\nWHERE b.SESSION_CD='@{pipeline().parameters.p_SESSION_CD}'\n",
+							"type": "Expression"
+						},
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "SqlMISink",
+						"preCopyScript": {
+							"value": "DELETE FROM [OVPS].[ST_EDI_CENSUS_DATA] WHERE SESSION_CD='@{pipeline().parameters.p_SESSION_CD}'",
+							"type": "Expression"
+						},
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "IRDGMI_DWH",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"parameters": {
+			"p_SESSION_CD": {
+				"type": "string",
+				"defaultValue": "20241"
+			}
+		},
+		"folder": {
+			"name": "Census"
+		},
+		"annotations": []
+	}
+}
