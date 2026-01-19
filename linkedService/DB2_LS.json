@@ -1,0 +1,16 @@
+{
+	"name": "DB2_LS",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Db2",
+		"typeProperties": {
+			"connectionString": "server=DB2SERVER;database=DB2DB;username=ahalya1;authenticationtype=Basic",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIxMGVkMDcwNi0wNDQ0LTQyYjctYWE0Zi03MTAxZDlhMTA2NTEiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "SelfHostedIntegrationRuntimeARCLaptop",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
