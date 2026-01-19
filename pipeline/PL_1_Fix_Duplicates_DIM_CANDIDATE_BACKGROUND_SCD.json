@@ -1,0 +1,313 @@
+{
+	"name": "PL_1_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD",
+	"properties": {
+		"activities": [
+			{
+				"name": "lkpCreateTmpTable",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpCheckTempTableExists",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": {
+							"value": "@concat(\n    if(greater(activity('lkpCheckTempTableExists').output.count, 0),'DROP TABLE DWH.TMP_DUPLICATE_KEYS;',''),\n    'CREATE TABLE DWH.TMP_DUPLICATE_KEYS (KEY_1 INTEGER, KEY_2 INTEGER, FEE_CAT_CD_1 CHAR(2), FEE_CAT_CD_2 CHAR(2), COUNT_NCAN INTEGER, LEG_STATUS CHAR(1), CALC_FEE_CAT_CD CHAR(2), DUPLICATE_RECORD_KEY INTEGER, USE_RECORD_KEY INTEGER); GRANT ALL ON DWH.TMP_DUPLICATE_KEYS TO rajkum25'\n)",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "lkpCheckTempTableExists",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "SELECT * FROM SYSIBM.TABLES WHERE TABLE_NAME='TMP_DUPLICATE_KEYS' AND TABLE_SCHEMA='DWH'"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "lkpDeleteDuplicateKeys",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ForEachRelatedTableInArray",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "DELETE FROM DWH.DIM_CANDIDATE_BACKGROUND_SCD WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NOT NULL\r\nAND DUPLICATE_RECORD_KEY NOT IN (SELECT USE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS))"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "lkpInsertDuplicateRecordKeysIntoTmp",
+				"description": "Step 1: Find duplicates where all columns are similar and handle them.",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpCreateTmpTable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "INSERT INTO DWH.TMP_DUPLICATE_KEYS (DUPLICATE_RECORD_KEY, USE_RECORD_KEY)\r\nWITH DUPLICATES AS (\r\nSELECT POST_CD, SESSION_CD, PERSON_ID, OUAC_PROGRAM_CD, OUAC_PROGRAM_DESC, OUAC_SOURCE, OUAC_SOURCE_DESC, OUAC_COOP_IND, OUAC_YEAR_LVL, OAC_INTERIM_AVERAGE_AMT, OAC_FINAL_AVERAGE_AMT,\r\n   OAC_FINAL_AVERAGE_ROUNDED_AMT, OAC_FINAL_AVERAGE_CATEGORY, OAC_FINAL_AVERAGE_ALT_CATEGORY, COMPOSITE_INTERIM_AVERAGE_AMT, ADMISSIONS_FINAL_AVERAGE_AMT, ADMISSION_FINAL_AVERAGE_ROUNDED_AMT,\r\n   ADMISSION_FINAL_AVERAGE_CATEGORY, ADMISSION_FINAL_AVERAGE_ALT_CATEGORY, ATTENDANCE_CLASS, RESIDENCE_REQUEST_IND, RESIDENCE_REQUEST_DESC, RESIDENCE_GUARANTEE_IND, RESIDENCE_GUARANTEE_DESC,\r\n   FEE_CATEGORY_CD, FEE_CATEGORY_DESC, FEE_CATEGORY_SHORT_NM, FEE_CATEGORY_GROUP, OUAC_PROGRAM_CATEGORY, ES_TRANSFER_DESC, START_DT, END_DT, OAC_FINAL_AVG_CATEGORY_SORT_NO,\r\n   OAC_FINAL_AVG_ALT_CATEGORY_SORT_NO, ADMISSION_FINAL_AVG_CATEGORY_SORT_NO, ADMISSION_FINAL_AVG_ALT_CATEGORY_SORT_NO, PROCESS_TMST, BATCH_IND\r\n   FROM DWH.DIM_CANDIDATE_BACKGROUND_SCD \r\n   /*WHERE CANDIDATE_BACKGROUND_KEY IN (2326004, 2265638, 2326006, 2265640, 2326104, 2327716, 2267355, 2355683, 2295391, 3591063, 3340713)*/\r\nGROUP BY \r\nPOST_CD, SESSION_CD, PERSON_ID, OUAC_PROGRAM_CD, OUAC_PROGRAM_DESC, OUAC_SOURCE, OUAC_SOURCE_DESC, OUAC_COOP_IND, OUAC_YEAR_LVL, OAC_INTERIM_AVERAGE_AMT, OAC_FINAL_AVERAGE_AMT,\r\n   OAC_FINAL_AVERAGE_ROUNDED_AMT, OAC_FINAL_AVERAGE_CATEGORY, OAC_FINAL_AVERAGE_ALT_CATEGORY, COMPOSITE_INTERIM_AVERAGE_AMT, ADMISSIONS_FINAL_AVERAGE_AMT, ADMISSION_FINAL_AVERAGE_ROUNDED_AMT,\r\n   ADMISSION_FINAL_AVERAGE_CATEGORY, ADMISSION_FINAL_AVERAGE_ALT_CATEGORY, ATTENDANCE_CLASS, RESIDENCE_REQUEST_IND, RESIDENCE_REQUEST_DESC, RESIDENCE_GUARANTEE_IND, RESIDENCE_GUARANTEE_DESC,\r\n   FEE_CATEGORY_CD, FEE_CATEGORY_DESC, FEE_CATEGORY_SHORT_NM, FEE_CATEGORY_GROUP, OUAC_PROGRAM_CATEGORY, ES_TRANSFER_DESC, START_DT, END_DT, OAC_FINAL_AVG_CATEGORY_SORT_NO,\r\n   OAC_FINAL_AVG_ALT_CATEGORY_SORT_NO, ADMISSION_FINAL_AVG_CATEGORY_SORT_NO, ADMISSION_FINAL_AVG_ALT_CATEGORY_SORT_NO, PROCESS_TMST, BATCH_IND\r\nHAVING COUNT(*) > 1\r\n),\r\nDUPLICATE_IDS AS (\r\nSELECT CANDIDATE_BACKGROUND_KEY, PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT, \r\nROW_NUMBER() OVER (PARTITION BY PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT ORDER BY CANDIDATE_BACKGROUND_KEY) as C_ID\r\nFROM DWH.DIM_CANDIDATE_BACKGROUND_SCD\r\nWHERE PERSON_ID IN (SELECT PERSON_ID FROM DUPLICATES) AND SESSION_CD IN (SELECT SESSION_CD FROM DUPLICATES) AND POST_CD IN (SELECT POST_CD FROM DUPLICATES) AND START_DT IN (SELECT START_DT FROM DUPLICATES) AND END_DT IN (SELECT END_DT FROM DUPLICATES)\r\n),\r\nDEDUP as\r\n(\r\nSELECT a.CANDIDATE_BACKGROUND_KEY AS DUPLICATE_RECORD_KEY, b.CANDIDATE_BACKGROUND_KEY AS USE_RECORD_KEY\r\nfrom DUPLICATE_IDS a\r\nINNER JOIN DUPLICATE_IDS b\r\nON a.PERSON_ID = b.PERSON_ID AND a.SESSION_CD=b.SESSION_CD AND a.POST_CD=b.POST_CD AND a.START_DT=b.START_DT AND a.END_DT=b.END_DT\r\nWHERE a.C_ID > 1 AND b.C_ID = 1\r\n)\r\nSELECT DUPLICATE_RECORD_KEY, USE_RECORD_KEY FROM DEDUP"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEachRelatedTableInArray",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CopySCDDuplRecordsToCSV",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.p_related_tables",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "lkpMergeUpdateRelatedTableFromArray",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "CopyRecordsToUpdateToCSV",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "Db2Source",
+									"query": {
+										"value": "@concat('MERGE into DWH.',\nitem(),\n' a USING (SELECT DUPLICATE_RECORD_KEY, USE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NOT NULL) b on a.CANDIDATE_BACKGROUND_KEY = b.DUPLICATE_RECORD_KEY WHEN MATCHED THEN UPDATE set a.CANDIDATE_BACKGROUND_KEY = b.USE_RECORD_KEY')",
+										"type": "Expression"
+									}
+								},
+								"firstRowOnly": false
+							}
+						},
+						{
+							"name": "CopyRecordsToUpdateToCSV",
+							"description": "Backup records where duplicate keys will be updated to use keys.",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "Db2Source",
+									"query": {
+										"value": "@concat('SELECT * FROM DWH.', item(), ' WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)')",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "lkpDeleteInvalidKeysInTmp",
+				"description": "Prerequisite: Table TMP_DUPLICATE_KEYS is already populated with duplicate and use keys.  Next steps are only to remove invalid keys, and run the updates on the fact tables.",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpInsertDuplicateRecordKeysIntoTmp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "DELETE FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NULL OR USE_RECORD_KEY=DUPLICATE_RECORD_KEY OR USE_RECORD_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CopyTmpDuplicateKeysToCSV",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "lkpDeleteInvalidKeysInTmp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				}
+			},
+			{
+				"name": "CopySCDDuplRecordsToCSV",
+				"description": "Backup records marked as Duplicate that will be deleted in the last step of the pipeline.",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "CopyTmpDuplicateKeysToCSV",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "SELECT * FROM DWH.DIM_CANDIDATE_BACKGROUND_SCD WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				}
+			}
+		],
+		"parameters": {
+			"p_related_tables": {
+				"type": "array"
+			}
+		},
+		"folder": {
+			"name": "Production Support/DIM_CANDIDATE_BACKGROUND_SCD/Fix_Overlap_Records"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-19T14:16:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
