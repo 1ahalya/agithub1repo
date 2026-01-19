@@ -1,0 +1,440 @@
+{
+	"name": "PL_3_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD",
+	"properties": {
+		"activities": [
+			{
+				"name": "lkpCreateTmpTable",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpCheckTempTableExists",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": {
+							"value": "@concat(\n    if(greater(activity('lkpCheckTempTableExists').output.count, 0),'DROP TABLE DWH.TMP_DUPLICATE_KEYS;',''),\n    'CREATE TABLE DWH.TMP_DUPLICATE_KEYS (DUPLICATE_RECORD_KEY INTEGER, USE_RECORD_KEY INTEGER)'\n)",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "lkpCheckTempTableExists",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "SetInsertSqlString",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "SELECT * FROM SYSIBM.TABLES WHERE TABLE_NAME='TMP_DUPLICATE_KEYS' AND TABLE_SCHEMA='DWH'"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "lkpDeleteDuplicateKeys",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "ForEachRelatedTableInArray",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "DELETE FROM DWH.DIM_CANDIDATE_BACKGROUND_SCD WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NOT NULL\r\nAND DUPLICATE_RECORD_KEY NOT IN (SELECT USE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS))"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "lkpInsertDuplicateRecordKeysIntoTmp",
+				"description": "",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpCreateTmpTable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": {
+							"value": "@variables('v_insert_sql')",
+							"type": "Expression"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "lkpSrcDuplRecordFixesCsv",
+				"description": "This pipeline is for fixing any duplicate records that have not previously been fixed programmatically with PL_Master_Fix_Duplicates.\nPrerequsite for this pipeline: Update csv with candidate_key values for each duplicate record.  Upload file to the data lake.  Folder and file name should match the settings in the lookup.",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": false,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "SetInsertSqlString",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "ForEachCsvRow",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "v_insert_sql",
+					"value": {
+						"value": "@concat('INSERT INTO DWH.TMP_DUPLICATE_KEYS (DUPLICATE_RECORD_KEY, USE_RECORD_KEY) VALUES ', join(variables('v_use_candidate_keys'), ','))",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachRelatedTableInArray",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CopySCDDuplRecordsToCSV",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.p_related_tables",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "lkpMergeUpdateRelatedTableFromArray",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "CopyRecordsToUpdateToCSV",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "Db2Source",
+									"query": {
+										"value": "@concat('MERGE into DWH.',\nitem(),\n' a USING (SELECT DUPLICATE_RECORD_KEY, USE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NOT NULL) b on a.CANDIDATE_BACKGROUND_KEY = b.DUPLICATE_RECORD_KEY WHEN MATCHED THEN UPDATE set a.CANDIDATE_BACKGROUND_KEY = b.USE_RECORD_KEY')",
+										"type": "Expression"
+									}
+								},
+								"firstRowOnly": false
+							}
+						},
+						{
+							"name": "CopyRecordsToUpdateToCSV",
+							"description": "Backup records where duplicate keys will be updated to use keys.",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "Db2Source",
+									"query": {
+										"value": "@concat('SELECT * FROM DWH.', item(), ' WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)')",
+										"type": "Expression"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ForEachCsvRow",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "lkpSrcDuplRecordFixesCsv",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('lkpSrcDuplRecordFixesCsv').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "IfDuplKeyNotEqualsUseKey",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@not(equals(item().CANDIDATE_KEY, item().USE_CANDIDATE_KEY)) ",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "AppendCandidateKeysToUse",
+										"description": "Build use_candidate_key values list",
+										"type": "AppendVariable",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "v_use_candidate_keys",
+											"value": {
+												"value": "@concat('(', item().CANDIDATE_KEY, ',', item().USE_CANDIDATE_KEY, ')')",
+												"type": "Expression"
+											}
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "lkpDeleteInvalidKeysInTmp",
+				"description": "Prerequisite: Table TMP_DUPLICATE_KEYS is already populated with duplicate and use keys.  Next steps are only to remove invalid keys, and run the updates on the fact tables.",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "lkpInsertDuplicateRecordKeysIntoTmp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "DELETE FROM DWH.TMP_DUPLICATE_KEYS WHERE USE_RECORD_KEY IS NULL OR USE_RECORD_KEY=DUPLICATE_RECORD_KEY OR USE_RECORD_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CopyTmpDuplicateKeysToCSV",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "lkpDeleteInvalidKeysInTmp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				}
+			},
+			{
+				"name": "CopySCDDuplRecordsToCSV",
+				"description": "Backup records marked as Duplicate that will be deleted in the last step of the pipeline.",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "CopyTmpDuplicateKeysToCSV",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "SELECT * FROM DWH.DIM_CANDIDATE_BACKGROUND_SCD WHERE CANDIDATE_BACKGROUND_KEY IN (SELECT DUPLICATE_RECORD_KEY FROM DWH.TMP_DUPLICATE_KEYS)"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				}
+			}
+		],
+		"parameters": {
+			"p_related_tables": {
+				"type": "array",
+				"defaultValue": [
+					"ST_ADMISSIONS_FACT",
+					"ST_ADMISSIONS_SCHOLARSHIP_FACT",
+					"ST_CANDIDACY_STATUS_FACT",
+					"ST_DIVN_RETENTION_FACT",
+					"ST_INST_RETENTION_FACT"
+				]
+			}
+		},
+		"variables": {
+			"v_use_candidate_keys": {
+				"type": "Array"
+			},
+			"v_insert_sql": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "Production Support/DIM_CANDIDATE_BACKGROUND_SCD/Fix_Overlap_Records"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-19T14:16:22Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
