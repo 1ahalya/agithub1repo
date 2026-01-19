@@ -1,0 +1,178 @@
+{
+	"name": "PL_Master_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD",
+	"properties": {
+		"activities": [
+			{
+				"name": "CopyRemainingDuplicateRecordsListToSFTP",
+				"description": "Run query to find remaining duplicate records (records after fixing fully duplicate, and those records that vary in fields such as email, gender, province).  Copy list to data lake to handle manually or use as source in PL_3 (with csv as source in data lake).",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "ExecPL2FixDuplRecordsWithDiffFlds",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "WITH DUPLICATES AS (\r\nSELECT PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT\r\nFROM DWH.DIM_CANDIDATE_BACKGROUND_SCD \r\n/*WHERE CANDIDATE_BACKGROUND_KEY IN (2326004, 2265638, 2326006, 2265640, 2326104, 2327716, 2267355, 2355683, 2295391, 3591063, 3340713)*/\r\n/*WHERE PERSON_ID='1002628329' AND SESSION_CD='20199'*/\r\nGROUP BY PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT\r\nHAVING COUNT(*) > 1\r\n),\r\nDUPLICATE_IDS AS (\r\nSELECT CANDIDATE_BACKGROUND_KEY, PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT, \r\nrow_number() over(partition by PERSON_ID, SESSION_CD, POST_CD, START_DT, END_DT ORDER BY CANDIDATE_BACKGROUND_KEY) as c_id, NULL AS USE_CANDIDATE_KEY\r\nFROM DWH.DIM_CANDIDATE_BACKGROUND_SCD\r\nWHERE PERSON_ID IN (SELECT PERSON_ID FROM DUPLICATES) AND SESSION_CD IN (SELECT SESSION_CD FROM DUPLICATES) AND POST_CD IN (SELECT POST_CD FROM DUPLICATES) AND START_DT IN (SELECT START_DT FROM DUPLICATES) AND END_DT IN (SELECT END_DT FROM DUPLICATES)\r\n)\r\nSELECT * FROM DUPLICATE_IDS"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings",
+							"copyBehavior": "FlattenHierarchy"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				}
+			},
+			{
+				"name": "IfThereAreDuplicateRecordsToFix",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CopyRemainingDuplicateRecordsListToSFTP",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(activity('CopyRemainingDuplicateRecordsListToSFTP').output.rowsCopied,0)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "send_email",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "UTBI_Send_Email",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"receiver": {
+										"value": "@pipeline().parameters.email_to",
+										"type": "Expression"
+									},
+									"subject": {
+										"value": "DIM_CANDIDATE_BACKGROUND_SCD: Fix duplicate records",
+										"type": "Expression"
+									},
+									"message": {
+										"value": "DIM_CANDIDATE_BACKGROUND_SCD has duplicate records that need to be fixed manually.  Check the file below for the list of records that need to be fixed from ADL:<br />\n/raw_zone/UTBI/UTBI_Projects/PL_Files/DIM_CANDIDATE_BACKGROUND_SCD_DUPL_RECORDS_Generated.csv\n<br /><br />\nTo use the pipeline to fix these records, please do the following steps:<br />\n1. Download the file.<br />\n2. Check each record in the file and resolve the CANDIDATE_BACKGROUND_KEY to be used for each row.<br />\n3. Enter the CANDIDATE_BACKGROUND_KEY to use for each record in the 'USE_CANDIDATE_KEY' column.<br />\n4. Save the file as DIM_CANDIDATE_BACKGROUND_SCD_DUPL_RECORDS_Fixed.csv <br />\n5. Upload the file to this location (note that this location is different from where the file was originally retrieved): /raw_zone/UTBI/UTBI_Projects/PL_Files/DIM_CANDIDATE_BACKGROUND_SCD_DUPL_RECORDS_Fixed.csv <br />\n6. Run the pipleline PL_3_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD manually.",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ExecPL2FixDuplRecordsWithDiffFlds",
+				"description": "Execute pipeline to handle records that are not fully duplicate but vary in fields such as email, gender, province.",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ExecutePL1FixFullDuplRecords",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_2_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_related_tables": {
+							"value": "@pipeline().parameters.p_related_tables",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "ExecutePL1FixFullDuplRecords",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_1_Fix_Duplicates_DIM_CANDIDATE_BACKGROUND_SCD",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_related_tables": {
+							"value": "@pipeline().parameters.p_related_tables",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"email_to": {
+				"type": "string",
+				"defaultValue": "ahalya.rajkumar@utoronto.ca"
+			},
+			"p_related_tables": {
+				"type": "array",
+				"defaultValue": [
+					"ST_ADMISSIONS_FACT",
+					"ST_ADMISSIONS_SCHOLARSHIP_FACT",
+					"ST_CANDIDACY_STATUS_FACT",
+					"ST_DIVN_RETENTION_FACT",
+					"ST_INST_RETENTION_FACT"
+				]
+			}
+		},
+		"variables": {
+			"v_run_pl": {
+				"type": "Boolean",
+				"defaultValue": true
+			}
+		},
+		"folder": {
+			"name": "Production Support/DIM_CANDIDATE_BACKGROUND_SCD/Fix_Overlap_Records"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-19T14:16:32Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
