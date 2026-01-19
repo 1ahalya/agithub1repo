@@ -313,7 +313,15 @@
 							"fileExtension": ".txt"
 						}
 					},
-					"enableStaging": false
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
 				},
 				"inputs": [
 					{
@@ -323,6 +331,12 @@
 							"Schema": "DWH",
 							"Table": "TMP_DUPLICATE_KEYS"
 						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DL_SH_CSV",
+						"type": "DatasetReference"
 					}
 				]
 			},
