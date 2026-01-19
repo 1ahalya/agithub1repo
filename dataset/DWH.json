@@ -1,0 +1,22 @@
+{
+	"name": "DWH",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "DB2_LS",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Schema": {
+				"type": "string",
+				"defaultValue": "DWH"
+			},
+			"Table": {
+				"type": "string",
+				"defaultValue": "DIM_CANDIDATE_BACKGROUND_SCD"
+			}
+		},
+		"annotations": [],
+		"type": "Db2Table",
+		"schema": []
+	}
+}
